@@ -9,7 +9,7 @@ Validate a mainspec and its slices using parallel foreground subagents for high-
 
 ## Invocation Contract
 
-**Invoked by the dispatcher as:** `claude -p "/spec-validate <feature>" --cwd <worktree>`
+**Invoked by the dispatcher as:** `claude -p "/spec-validate <feature>"`, run from inside the feature worktree (the dispatcher `cd`s into it — there is no print-mode `--cwd` flag).
 
 **Single argument:** `<feature>` — kebab-case feature slug.
 

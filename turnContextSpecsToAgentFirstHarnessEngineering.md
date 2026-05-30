@@ -288,7 +288,17 @@ LOCAL_CHECKS_CAP="${LOCAL_CHECKS_CAP:-2}" # local-checks two-strike (auto-fix �
 FEEDBACK_CAP="${FEEDBACK_CAP:-5}"         # reviewer feedback rounds before STUCK
 mkdir -p .harness
 
-# Project-local config overrides (MAX_WORKTREES, WATCH_PATTERN, caps, ...).
+# Headless permission posture for `claude -p`. A headless session can't show a
+# permission prompt, so without a posture tool calls are denied and the step
+# falsely STUCKs. `auto` is classifier-gated and prompt-free; repeated blocks
+# abort the session -> non-zero exit -> the step's retry/STUCK machinery catches
+# it. Override in .harness/env (e.g. CLAUDE_PERM_ARGS=( --dangerously-skip-permissions ))
+# for a Bedrock/Vertex CLI (auto is Anthropic-API only), a claude predating
+# --permission-mode, or classifier-free runs. Set ABOVE the source line so the
+# config file can replace the array.
+CLAUDE_PERM_ARGS=( --permission-mode auto )
+
+# Project-local config overrides (MAX_WORKTREES, WATCH_PATTERN, CLAUDE_PERM_ARGS, caps, ...).
 [[ -f .harness/env ]] && source .harness/env
 
 worktree_for() { echo "${WORKTREE_BASE}-$1"; }
@@ -315,18 +325,25 @@ bootstrap_worktree() {
 # locatable later, and appends a row to .harness/sessions-<feature>.tsv. The TSV
 # is the per-feature audit trail the STUCK signal points the human into.
 run_claude() {
-  local step="$1" feature="$2" attempt="$3"; shift 3
+  local step="$1" feature="$2" attempt="$3" wt="$4"; shift 4
   local sid; sid="$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "noid-$$-$RANDOM")"
   local log=".harness/sessions-${feature}.tsv"
   [[ -s "$log" ]] || printf '#timestamp\tstep\tattempt\tsession_id\texit\tduration_s\n' > "$log"
   local t0; t0="$(date +%s)"
+  # No print-mode --cwd flag exists; `cd` is the only way to set the working dir,
+  # and it's also what gives the skill its .claude/ command + AGENTS.md / CLAUDE.md
+  # discovery inside the worktree. (Inv 3 + 6.) `learn` passes "." to run at the
+  # repo root on main. The `|| exit=$?` stops a non-zero skill exit from tripping
+  # `set -e` so the row below always gets written, and `return 0` stops a failed
+  # step from aborting the rest of the tick — the absent sentinel makes the next
+  # tick re-derive and retry. (Inv 1 + 4 + 5)
   # NOTE: --session-id is the documented headless flag; if your claude version
   # doesn't support it, swap for --output-format json and parse session_id out.
-  claude -p --session-id "$sid" "$@"
-  local exit=$?
+  local exit=0
+  ( cd "$wt" && claude -p --session-id "$sid" "${CLAUDE_PERM_ARGS[@]+"${CLAUDE_PERM_ARGS[@]}"}" "$@" ) || exit=$?
   printf '%s\t%s\t%d\t%s\t%d\t%d\n' \
     "$(date -Iseconds 2>/dev/null || date)" "$step" "$attempt" "$sid" "$exit" "$(( $(date +%s) - t0 ))" >> "$log"
-  return $exit
+  return 0
 }
 
 # Signal STUCK to the human via the PR. Opens a draft PR if none exists yet
@@ -449,7 +466,7 @@ for feature in ${in_flight[@]+"${in_flight[@]}"}; do
          signal_stuck "$feature" "spec-planning" "$PLANNING_CAP"
        else
          echo $((attempts + 1)) > "${attempts_file}"
-         run_claude spec-planning "$feature" $((attempts + 1)) "/spec-planning ${feature}" --cwd "${wt}"
+         run_claude spec-planning "$feature" $((attempts + 1)) "$wt" "/spec-planning ${feature}"
        fi
 
   elif [[ ! -f "${wt}/specs/${feature}/.validated" ]]; then
@@ -459,7 +476,7 @@ for feature in ${in_flight[@]+"${in_flight[@]}"}; do
          signal_stuck "$feature" "spec-validate" "$VALIDATE_CAP"
        else
          echo $((attempts + 1)) > "${attempts_file}"
-         run_claude spec-validate "$feature" $((attempts + 1)) "/spec-validate ${feature}" --cwd "${wt}"
+         run_claude spec-validate "$feature" $((attempts + 1)) "$wt" "/spec-validate ${feature}"
        fi
 
   elif ! ( cd "${wt}" && "./prds/${feature}/run-prd-test.sh" ); then
@@ -470,7 +487,7 @@ for feature in ${in_flight[@]+"${in_flight[@]}"}; do
          signal_stuck "$feature" "implement-mainspec" "$IMPLEMENT_CAP" ".harness/stuck-output-${feature}.log"
        else
          echo $((attempts + 1)) > "${attempts_file}"
-         run_claude implement-mainspec "$feature" $((attempts + 1)) "/implement-mainspec ${feature}" --cwd "${wt}"
+         run_claude implement-mainspec "$feature" $((attempts + 1)) "$wt" "/implement-mainspec ${feature}"
        fi
 
   elif [[ -x "${wt}/scripts/local-checks.sh" ]] \
@@ -488,7 +505,7 @@ for feature in ${in_flight[@]+"${in_flight[@]}"}; do
          fi
          echo 1 > "${attempts_file}"
        else
-         run_claude fix-local-checks "$feature" $((attempts + 1)) "/fix-local-checks ${feature}" --cwd "${wt}"
+         run_claude fix-local-checks "$feature" $((attempts + 1)) "$wt" "/fix-local-checks ${feature}"
          echo $((attempts + 1)) > "${attempts_file}"
        fi
 
@@ -507,7 +524,7 @@ for feature in ${in_flight[@]+"${in_flight[@]}"}; do
          signal_stuck "$feature" "address-feedback" "$FEEDBACK_CAP"
        else
          echo $((rounds + 1)) > "${rounds_file}"
-         run_claude address-feedback "$feature" $((rounds + 1)) "/address-feedback ${feature}" --cwd "${wt}"
+         run_claude address-feedback "$feature" $((rounds + 1)) "$wt" "/address-feedback ${feature}"
        fi
   fi
 done
@@ -540,7 +557,7 @@ LAST="$(cat .harness/last-main-sha 2>/dev/null || echo HEAD~50)"
 CUR="$(git rev-parse origin/main)"
 if [[ "${CUR}" != "${LAST}" ]] \
    && ! git ls-remote --exit-code origin "learn/${CUR}" >/dev/null 2>&1; then
-  run_claude learn "_main" 1 "/learn --since ${LAST} --sha ${CUR}"
+  run_claude learn "_main" 1 "." "/learn --since ${LAST} --sha ${CUR}"
 fi
 echo "${CUR}" > .harness/last-main-sha
 
@@ -555,7 +572,7 @@ Seven load-bearing properties (each one is the dispatcher's concrete realization
 1. **One transition per tick per branch, max.** The `if/elif` chain fires at most one branch. Next tick, the artifact written by this tick satisfies that condition and the *next* `elif` fires. The state machine walks forward one step at a time. → Invariant 5.
 2. **Artifacts are the only state.** No in-memory state, no checkpoint files describing "what step we're on." A sentinel file existing IS that phase being done. Crash recovery is free — the next tick re-derives state from disk. → Invariants 1 + 4.
 3. **The working tree is wiped *and* HEAD-checked at the start of every per-feature advance.** `git reset --hard && git clean -fd` throws away anything a crashed skill left uncommitted; the HEAD guard skips any worktree whose current branch doesn't match the feature being advanced (so a manually-checked-out branch can never be silently clobbered). Wipes run on per-feature worktrees, never on the human's checkout. → Invariants 3 + 6.
-4. **The dispatcher never invokes an LLM directly.** It only spawns `claude -p` subprocesses or shells out to `gh`/`git`. Each subprocess is a fresh OS process, a fresh model session, a clean context window. `[[clean-state-handoff]]` made concrete. → Invariant 5.
+4. **The dispatcher never invokes an LLM directly.** It only spawns `claude -p` subprocesses or shells out to `gh`/`git`. Each subprocess is a fresh OS process, a fresh model session, a clean context window. `run_claude` `cd`s the subprocess into the feature worktree before launching (there is no print-mode `--cwd` flag, and the `cd` is also what gives the skill its `.claude/` command + `AGENTS.md` discovery; the `learn` subprocess runs at the repo root on `main`). A skill's non-zero exit is recorded but never aborts the tick — the absent sentinel makes the next tick retry. `[[clean-state-handoff]]` made concrete. → Invariant 5.
 5. **Every gate is bounded — no infinite loops.** Three circuit breakers, all deterministic: the PRD-runner gate stops after `IMPLEMENT_CAP` attempts (the plan may be broken, not the code); `local-checks.sh` uses a two-strike retry (auto-fix, then focused LLM fix); the feedback loop stops after `FEEDBACK_CAP` rounds. Each terminal STUCK drops a `.harness/stuck-<f>` sentinel and halts that feature. Projects without `local-checks.sh` skip that gate entirely. → Invariant 8.
 6. **`MAX_WORKTREES` is the single concurrency knob.** Default `1` = FIFO single-worktree; raise it for bounded parallelism. Claims are **lazy** — PRDs over remaining capacity stay in `prd/<slug>/*` as the visible waiting queue, never prematurely renamed to `feature/<f>`. In-flight work always continues regardless of cap changes (the cap throttles intake, not continuation). Pickup order is FIFO by remote branch committerdate. → Invariants 2 + 3.
 7. **STUCK is the third human-steering point; memory has one write path.** A cap-hit in step 3 calls `signal_stuck`, which opens (or comments on) the PR with the session log, the failing-output tail, and the diagnosis-first checklist — then halts that feature. The human's first job is the context defect, not the code; the merge carries both fixes back. Memory is *only* written by `/learn` at step 5, post-merge, from ground truth. → Invariant 7.

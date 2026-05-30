@@ -9,7 +9,7 @@ Implements all slices from a mainspec in dependency order. Auto-detects **sequen
 
 ## Invocation Contract
 
-**Invoked by the dispatcher as:** `claude -p "/implement-mainspec <feature>" --cwd <worktree>`
+**Invoked by the dispatcher as:** `claude -p "/implement-mainspec <feature>"`, run from inside the feature worktree (the dispatcher `cd`s into it — there is no print-mode `--cwd` flag).
 
 **Single argument:** `<feature>` — kebab-case feature slug. The mainspec path is `specs/<feature>/mainspec.md` relative to cwd.
 

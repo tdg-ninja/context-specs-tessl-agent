@@ -25,7 +25,20 @@ LOCAL_CHECKS_CAP="${LOCAL_CHECKS_CAP:-2}" # local-checks two-strike (auto-fix �
 FEEDBACK_CAP="${FEEDBACK_CAP:-5}"         # reviewer feedback rounds before STUCK
 mkdir -p .harness
 
-# Load project-local config if present (MAX_WORKTREES, WATCH_PATTERN, ...).
+# Headless permission posture for `claude -p`. A headless session cannot show a
+# permission prompt — without a posture, tool calls are denied, the skill can't
+# do its work, and the step falsely STUCKs. `auto` is classifier-gated and
+# prompt-free; on repeated classifier blocks the session aborts -> non-zero exit
+# -> the step's retry/STUCK machinery catches it. Override in .harness/env, e.g.
+#   CLAUDE_PERM_ARGS=( --dangerously-skip-permissions )
+# if the CLI is Bedrock/Vertex-backed (auto is Anthropic-API only), the installed
+# claude predates --permission-mode, or you want classifier-free, zero-overhead
+# runs inside the isolated worktree. Set ABOVE the source line so .harness/env
+# can replace the array.
+CLAUDE_PERM_ARGS=( --permission-mode auto )
+
+# Load project-local config if present (MAX_WORKTREES, WATCH_PATTERN,
+# CLAUDE_PERM_ARGS, ...).
 [[ -f .harness/env ]] && source .harness/env
 
 worktree_for() { echo "${WORKTREE_BASE}-$1"; }
@@ -54,18 +67,27 @@ bootstrap_worktree() {
 # locatable later, and appends a row to .harness/sessions-<feature>.tsv. The TSV
 # is the per-feature audit trail the STUCK signal points the human into.
 run_claude() {
-  local step="$1" feature="$2" attempt="$3"; shift 3
+  local step="$1" feature="$2" attempt="$3" wt="$4"; shift 4
   local sid; sid="$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "noid-$$-$RANDOM")"
   local log=".harness/sessions-${feature}.tsv"
   [[ -s "$log" ]] || printf '#timestamp\tstep\tattempt\tsession_id\texit\tduration_s\n' > "$log"
   local t0; t0="$(date +%s)"
+  # No print-mode --cwd flag exists; `cd` is the only way to set the working
+  # directory, and it's also what gives the skill its .claude/ command + AGENTS.md
+  # / CLAUDE.md discovery inside the worktree. (Inv 3 + 6: the skill operates on
+  # the feature worktree, never the dispatcher's checkout.) `learn` passes "." to
+  # run at the repo root on main.
+  # The `|| exit=$?` keeps a non-zero skill exit from tripping `set -e` so the row
+  # below always gets written (the STUCK dossier needs it), and `return 0` keeps a
+  # failed step from aborting the rest of the tick — the absent sentinel makes the
+  # next tick re-derive and retry. (Inv 1 + 4 + 5)
   # NOTE: --session-id is the documented headless flag; if your claude version
   # doesn't support it, swap for --output-format json and parse session_id out.
-  claude -p --session-id "$sid" "$@"
-  local exit=$?
+  local exit=0
+  ( cd "$wt" && claude -p --session-id "$sid" "${CLAUDE_PERM_ARGS[@]+"${CLAUDE_PERM_ARGS[@]}"}" "$@" ) || exit=$?
   printf '%s\t%s\t%d\t%s\t%d\t%d\n' \
     "$(date -Iseconds 2>/dev/null || date)" "$step" "$attempt" "$sid" "$exit" "$(( $(date +%s) - t0 ))" >> "$log"
-  return $exit
+  return 0
 }
 
 # Signal STUCK to the human via the PR. Opens a draft PR if none exists yet
@@ -200,7 +222,7 @@ for feature in ${in_flight[@]+"${in_flight[@]}"}; do
          signal_stuck "$feature" "spec-planning" "$PLANNING_CAP"
        else
          echo $((attempts + 1)) > "${attempts_file}"
-         run_claude spec-planning "$feature" $((attempts + 1)) "/spec-planning ${feature}" --cwd "${wt}"
+         run_claude spec-planning "$feature" $((attempts + 1)) "$wt" "/spec-planning ${feature}"
        fi
 
   elif [[ ! -f "${wt}/specs/${feature}/.validated" ]]; then
@@ -211,7 +233,7 @@ for feature in ${in_flight[@]+"${in_flight[@]}"}; do
          signal_stuck "$feature" "spec-validate" "$VALIDATE_CAP"
        else
          echo $((attempts + 1)) > "${attempts_file}"
-         run_claude spec-validate "$feature" $((attempts + 1)) "/spec-validate ${feature}" --cwd "${wt}"
+         run_claude spec-validate "$feature" $((attempts + 1)) "$wt" "/spec-validate ${feature}"
        fi
 
   elif ! ( cd "${wt}" && "./prds/${feature}/run-prd-test.sh" ); then
@@ -226,7 +248,7 @@ for feature in ${in_flight[@]+"${in_flight[@]}"}; do
          signal_stuck "$feature" "implement-mainspec" "$IMPLEMENT_CAP" ".harness/stuck-output-${feature}.log"
        else
          echo $((attempts + 1)) > "${attempts_file}"
-         run_claude implement-mainspec "$feature" $((attempts + 1)) "/implement-mainspec ${feature}" --cwd "${wt}"
+         run_claude implement-mainspec "$feature" $((attempts + 1)) "$wt" "/implement-mainspec ${feature}"
        fi
 
   elif [[ -x "${wt}/scripts/local-checks.sh" ]] \
@@ -248,7 +270,7 @@ for feature in ${in_flight[@]+"${in_flight[@]}"}; do
          fi
          echo 1 > "${attempts_file}"
        else
-         run_claude fix-local-checks "$feature" $((attempts + 1)) "/fix-local-checks ${feature}" --cwd "${wt}"
+         run_claude fix-local-checks "$feature" $((attempts + 1)) "$wt" "/fix-local-checks ${feature}"
          echo $((attempts + 1)) > "${attempts_file}"
        fi
 
@@ -273,7 +295,7 @@ for feature in ${in_flight[@]+"${in_flight[@]}"}; do
          signal_stuck "$feature" "address-feedback" "$FEEDBACK_CAP"
        else
          echo $((rounds + 1)) > "${rounds_file}"
-         run_claude address-feedback "$feature" $((rounds + 1)) "/address-feedback ${feature}" --cwd "${wt}"
+         run_claude address-feedback "$feature" $((rounds + 1)) "$wt" "/address-feedback ${feature}"
        fi
   fi
 done
@@ -307,7 +329,7 @@ LAST="$(cat .harness/last-main-sha 2>/dev/null || echo HEAD~50)"
 CUR="$(git rev-parse origin/main)"
 if [[ "${CUR}" != "${LAST}" ]] \
    && ! git ls-remote --exit-code origin "learn/${CUR}" >/dev/null 2>&1; then
-  run_claude learn "_main" 1 "/learn --since ${LAST} --sha ${CUR}"
+  run_claude learn "_main" 1 "." "/learn --since ${LAST} --sha ${CUR}"
 fi
 echo "${CUR}" > .harness/last-main-sha
 

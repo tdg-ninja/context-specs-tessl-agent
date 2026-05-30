@@ -9,7 +9,7 @@ Turn a PRD into a structured Spec Plan using Spec-Driven Development. Agent-firs
 
 ## Invocation Contract
 
-**Invoked by the dispatcher as:** `claude -p "/spec-planning <feature>" --cwd <worktree>`
+**Invoked by the dispatcher as:** `claude -p "/spec-planning <feature>"`, run from inside the feature worktree (the dispatcher `cd`s into it — there is no print-mode `--cwd` flag).
 
 **Single argument:** `<feature>` — kebab-case feature slug. All paths derive from this.
 

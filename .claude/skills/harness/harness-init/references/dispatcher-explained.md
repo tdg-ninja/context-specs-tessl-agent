@@ -84,10 +84,14 @@ merge carries it home.
 
 Two small helpers, both above step 1, do the legwork:
 
-- **`run_claude <step> <feature> <attempt#> "<skill cmd>" --cwd <wt>`** — wraps every
-  `claude -p` call. Generates a UUID session id, runs `claude -p --session-id`,
+- **`run_claude <step> <feature> <attempt#> <wt> "<skill cmd>"`** — wraps every
+  `claude -p` call. `cd`s into the worktree `<wt>` first (there is no print-mode
+  `--cwd` flag, and the `cd` is what gives the skill its `.claude/` command +
+  `AGENTS.md` discovery; `learn` passes `.` to run at the repo root on `main`).
+  Generates a UUID session id, runs `claude -p --session-id "${CLAUDE_PERM_ARGS[@]}"`,
   and appends `<timestamp>\t<step>\t<attempt>\t<session_id>\t<exit>\t<duration>`
-  to `.harness/sessions-<feature>.tsv` (gitignored, cleared on merge/close).
+  to `.harness/sessions-<feature>.tsv` (gitignored, cleared on merge/close). A
+  non-zero skill exit is recorded in the row but never aborts the tick (`return 0`).
 - **`signal_stuck <feature> <step> <cap> [output-file]`** — touches the stuck
   sentinel, composes a PR body (step, cap, tail of the session log, optional tail
   of the failing output, diagnosis-first checklist), and either opens a draft PR

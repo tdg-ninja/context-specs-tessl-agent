@@ -84,8 +84,9 @@ branch; `/learn` then observes it in the merged diff as a deliberate, blessed
 decision. The ability to skip is the human's, never yours.
 
 ## Contract with the dispatcher
-- **Invoked by:** `claude -p "/fix-local-checks <feature>"` with `--cwd <worktree>`,
-  after the auto-fix pass left the gate red.
+- **Invoked by:** `claude -p "/fix-local-checks <feature>"`, run from inside the
+  feature worktree (the dispatcher `cd`s into it; there is no print-mode `--cwd`
+  flag), after the auto-fix pass left the gate red.
 - **You do NOT track rounds.** The dispatcher owns the counter
   (`.harness/local-check-attempts-<f>`) and decides when to STUCK. You do one focused
   pass per invocation.

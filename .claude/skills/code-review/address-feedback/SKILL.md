@@ -119,8 +119,9 @@ git); you write no "handled" bookkeeping file.
    real problem → no diff → no commit.
 
 ## Contract with the dispatcher
-- **Invoked by:** `claude -p "/address-feedback <feature>"` with `--cwd <worktree>`, when the
-  reviewer has unresolved findings on the PR.
+- **Invoked by:** `claude -p "/address-feedback <feature>"`, run from inside the
+  feature worktree (the dispatcher `cd`s into it; there is no print-mode `--cwd`
+  flag), when the reviewer has unresolved findings on the PR.
 - **You do NOT track rounds.** The dispatcher owns the counter
   (`.harness/feedback-rounds-<f>`), increments it before **every** invocation regardless of
   bucket, and decides when to STUCK. A reply-only stall you can't push past marches to STUCK —

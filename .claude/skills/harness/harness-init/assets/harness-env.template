@@ -14,3 +14,13 @@ MAX_WORKTREES=1
 #   prd/*/*            = shared pool: all harnesses race; atomic rename is safe.
 # Leave unset to use the per-dev default derived from your git email.
 # WATCH_PATTERN=prd/your-slug/*
+
+# Headless permission posture for the `claude -p` skill subprocesses. A headless
+# session can't show a permission prompt, so it needs a posture or tool calls are
+# denied and the step falsely STUCKs. Default (set in the dispatcher) is:
+#   CLAUDE_PERM_ARGS=( --permission-mode auto )
+# classifier-gated, prompt-free, fail-safe (repeated blocks -> abort -> STUCK).
+# Uncomment to override when `auto` isn't available or wanted — e.g. a Bedrock/
+# Vertex-backed CLI (auto is Anthropic-API only), a claude older than
+# --permission-mode, or to skip the classifier entirely inside the worktree:
+# CLAUDE_PERM_ARGS=( --dangerously-skip-permissions )
