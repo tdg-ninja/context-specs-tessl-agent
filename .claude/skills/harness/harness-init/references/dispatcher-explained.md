@@ -44,7 +44,7 @@ Explain these as the "why it's safe" of the script. Each maps to an invariant.
 | Lines (approx) | Section | Tweakable? |
 |----------------|---------|------------|
 | top | `flock -n` self-lock | No — serializes ticks; load-bearing. |
-| config block | `SLUG`, `WATCH`, `WORKTREE_BASE`, `MAX_WORKTREES` | Via `.harness/env`, not by editing here. |
+| config block | `SLUG`, `WATCH`, `WORKTREE_BASE`, `MAX_WORKTREES` | Via `.harness/env`, not by editing here. `WORKTREE_BASE` derives `<repo>` from the **main worktree**, not `$PWD` — so per-feature paths are `<repo>-harness-<feature>` even though the dispatcher runs from the `<repo>-harness` host worktree. |
 | `has_prd()` | Invariant-2 ownership filter | No — defines what "harness-owned" means. |
 | step 1 | re-attach in-flight worktrees | The `bootstrap_worktree` hook call is the local addition (see below). |
 | step 2 | lazy claim up to capacity | No — atomic rename is the claim lock. |
@@ -66,6 +66,39 @@ script, the hook is a no-op.
 
 Make sure the user knows: this hook is why the per-feature worktrees the harness
 spins up are actually runnable.
+
+## The tick wrapper — keeping the host worktree current (`harness-tick.sh`)
+
+The dispatcher is **HEAD-agnostic**: it operates on git *refs* (`origin/feature/*`,
+`feature/*`) and per-feature worktrees, never on its own checkout's HEAD. But the
+files it executes — the dispatcher itself, `bootstrap-worktree.sh`, `.harness/env`,
+and (for step 5) the `/learn` skill + memory + root `AGENTS.md` — are read from the
+**host worktree**, which sits at a detached HEAD and does not auto-advance when
+`main` moves. Without a sync step, loop infrastructure freezes at the commit the
+host worktree was created on.
+
+So the outer loop targets **`scripts/harness-tick.sh`**, not the dispatcher
+directly. The wrapper:
+
+1. `git fetch origin`
+2. `git checkout -f --detach origin/main` + `git clean -fd` — force the host worktree
+   to a clean, current `main` (idempotent; self-heals whatever state a crash or a
+   prior `/learn` left it in)
+3. `exec ./scripts/poll-and-dispatch.sh`
+
+The sync lives in the wrapper, **before** `exec`, for a reason: if the dispatcher
+reset its own checkout mid-run it would overwrite the very file it's executing (and
+its `flock` is on `$0`). Doing it in the wrapper means the dispatcher always loads
+its freshest version cleanly. The wrapper is tiny and stable; on the rare tick where
+it changes on main, that change takes effect the next tick.
+
+Note the asymmetry: feature **pipeline** skills (`/spec-planning`, `/implement-*`,
+`/address-feedback`, …) do **not** need this sync — they run inside per-feature
+worktrees that branch from the PRD branch (off main), so new features pick up skill
+updates on their own. Only loop-level infra and `/learn`-time context ride the host
+worktree, and that's exactly what the wrapper refreshes. The `/learn` step keeping
+cwd `"."` (the host worktree) is therefore safe — the wrapper guarantees `"."` is a
+clean checkout of main each tick, so no dedicated `/learn` worktree is needed.
 
 ## Memory is single-path; STUCK is the third human-steering point
 
@@ -122,3 +155,7 @@ one place to change.
   and a cost surface).
 - Remove the wipe or the HEAD guard (breaks crash recovery and Inv 6).
 - Replace the atomic-rename claim with a marker file (breaks Inv 2 + 7).
+- Point `/loop` at `poll-and-dispatch.sh` directly, bypassing `harness-tick.sh`
+  (loop-infra updates merged to main would never reach the running loop).
+- Move the host-worktree sync *into* the dispatcher (it would overwrite its own
+  running file; the sync belongs in the wrapper, before `exec`).

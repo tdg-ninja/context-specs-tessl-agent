@@ -53,10 +53,14 @@ done
 echo
 echo "=== Harness artifacts (re-run / already-present check) ==="
 [[ -f scripts/poll-and-dispatch.sh ]] && warn "scripts/poll-and-dispatch.sh exists (re-run?)" || ok "scripts/poll-and-dispatch.sh absent (fresh)"
+[[ -f scripts/harness-tick.sh ]] && warn "scripts/harness-tick.sh exists (re-run?)" || ok "scripts/harness-tick.sh absent (fresh)"
 [[ -f .harness/env ]] && warn ".harness/env exists (re-run?)" || ok ".harness/env absent (fresh)"
 [[ -s AGENTS.md ]] && warn "AGENTS.md is non-empty (re-run? will diff)" || ok "AGENTS.md absent/empty (fresh)"
 [[ -f scripts/bootstrap-worktree.sh ]] && warn "scripts/bootstrap-worktree.sh exists (re-run?)" || ok "scripts/bootstrap-worktree.sh absent (fresh)"
 [[ -f REVIEW.md ]] && warn "REVIEW.md exists" || ok "REVIEW.md absent"
+# Preflight runs from the HUMAN's checkout (bare repo name), so basename "$PWD" is
+# the right base for the expected host-worktree path here. (The dispatcher, which
+# runs from the host worktree, instead derives this from the main worktree.)
 base="../$(basename "$PWD")-harness"
 [[ -d "$base" ]] && warn "host worktree $base already exists" || ok "host worktree $base absent (fresh)"
 

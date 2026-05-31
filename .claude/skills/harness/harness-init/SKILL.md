@@ -84,21 +84,30 @@ the chosen values. Add the runtime counter files to `.gitignore`:
 
 (Commit `.harness/env` itself; ignore only the counters.)
 
-### Step 2 — The dispatcher
+### Step 2 — The dispatcher + the tick wrapper
 
-Read `references/dispatcher-explained.md`. Copy `assets/poll-and-dispatch.sh` to
-`scripts/poll-and-dispatch.sh`, `chmod +x`. Then **walk the user through it** —
-the six load-bearing properties, the section map, and especially the
-**bootstrap hook** (the project-owned worktree provisioning; explain why it's
-there). Offer the common tweaks (PRD-runner stuck cap, feedback round
-cap, extra pipeline steps). Do not let them break the "what NOT to do" list.
+Read `references/dispatcher-explained.md`. Copy **both** `assets/poll-and-dispatch.sh`
+→ `scripts/poll-and-dispatch.sh` and `assets/harness-tick.sh` → `scripts/harness-tick.sh`,
+`chmod +x` both. Then **walk the user through them** — the six load-bearing
+properties of the dispatcher, the section map, the **bootstrap hook** (the
+project-owned worktree provisioning; explain why it's there), and the
+**`harness-tick.sh` wrapper**: the outer loop targets the wrapper, which
+force-syncs the host worktree to a clean `origin/main` and *then* `exec`s the
+(HEAD-agnostic) dispatcher. Explain why the sync lives in the wrapper, not the
+dispatcher: the dispatcher must never reset its own running file, and this is how
+loop-infrastructure updates merged to main (dispatcher, `.harness/env`, the
+`/learn` skill, memory, `AGENTS.md`) reach the loop — feature *pipeline* skills
+ride the PRD branch and need no sync. Offer the common tweaks (PRD-runner stuck
+cap, feedback round cap, extra pipeline steps). Do not let them break the "what
+NOT to do" list.
 
 ### Step 3 — The shim skill
 
 Copy `assets/poll-and-dispatch-SKILL.md` to
 `.claude/skills/poll-and-dispatch/SKILL.md`. Explain the `/loop` gotcha: the
-outer session must never do real work — this shim only calls the script, and all
-real work happens in fresh `claude -p` subprocesses. One paragraph; then move on.
+outer session must never do real work — this shim only calls
+`scripts/harness-tick.sh` (which syncs, then dispatches), and all real work
+happens in fresh `claude -p` subprocesses. One paragraph; then move on.
 
 ### Step 4 — `AGENTS.md` (Software 3.0)
 
@@ -169,24 +178,30 @@ the tradeoffs and that switching later is cheap (one workflow file). Then:
 ### Step 8 — Host worktree + provision
 
 Explain the three-checkout model (see `references/mental-model.md` and the
-project's `SETUP.md` if present): the human's checkout stays on main, the harness
-runs in a sibling worktree. Create it:
+project's `SETUP.md` if present): the human's checkout stays on `main`; the
+harness **host** worktree is a sibling that stays **detached at `origin/main`**
+(re-synced every tick by `harness-tick.sh`); per-feature work happens in
+*ephemeral* `../<repo>-harness-<feature>` worktrees the dispatcher creates and
+tears down. Create the host worktree **detached** — git won't let two worktrees
+check out `main` at once, and the human's checkout already holds it:
 
 ```
-git worktree add ../<repo>-harness main
+git worktree add --detach ../<repo>-harness origin/main
 ```
 
 Then run `scripts/bootstrap-worktree.sh ../<repo>-harness` to provision it. This
 **doubles as validation of the bootstrap script** — if the host worktree is
 runnable afterward, the script works. Fix and re-run if not.
 
-### Step 9 — Dry-run the dispatcher
+### Step 9 — Dry-run the tick
 
-From the **harness worktree** (`../<repo>-harness`), run
-`./scripts/poll-and-dispatch.sh` once. With no PRDs filed, it should be a clean
-no-op (fetch, find nothing, exit 0). This proves the wiring without doing any
-work. Walk through its output with the user. If anything errors, debug before
-starting the loop.
+From the **harness host worktree** (`../<repo>-harness`), run
+`./scripts/harness-tick.sh` once. It force-syncs the worktree to `origin/main`
+and then runs the dispatcher; with no PRDs filed it should be a clean no-op
+(fetch, sync, find nothing, exit 0). This proves the whole wiring — sync wrapper
++ dispatcher — without doing any work. Walk through its output with the user. If
+anything errors, debug before starting the loop. (Note: with no `origin` yet, the
+fetch fails fast — that's expected until the remote exists.)
 
 ### Step 10 — Commit, then start the loop
 

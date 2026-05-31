@@ -155,15 +155,23 @@ The human and the harness run on the same laptop, on the same repo, at the same 
 
 > → Invariants 3 (worktree ↔ branch 1:1), 6 (human checkout sandboxed), and 7 (cross-node safety) in [designInvariants.md](./designInvariants.md) state the safety properties this section relies on.
 
-### Two checkouts, one repo
+### Three checkouts, one repo
 
 ```
-~/projects/my-app/             ← human's checkout. Always on main. Never touched by the harness.
-~/projects/my-app-harness/     ← harness's persistent worktree. Moves between feature/* branches.
-.git lives in my-app/; my-app-harness/ is a `git worktree`.
+~/projects/my-app/             ← human's checkout. Always on main. Never touched by the harness. (Inv 6)
+~/projects/my-app-harness/     ← harness HOST worktree. Detached at origin/main; runs the loop + /learn.
+                                 Re-synced to main every tick. Does NOT move between feature branches.
+~/projects/my-app-harness-<f>/ ← EPHEMERAL per-feature worktree. One per in-flight feature; the
+                                 dispatcher creates it (off feature/<f>) and removes it on merge/close. (Inv 3)
+.git lives in my-app/; the others are `git worktree`s sharing it.
 ```
 
-`git worktree` is built for exactly this. The two checkouts share the underlying `.git` and stay in sync via push/pull. The human edits, runs the dev server, makes commits in their checkout; the harness does the same in its worktree. Neither sees the other's HEAD changes until they're pushed.
+`git worktree` is built for exactly this. All checkouts share the underlying `.git` and stay in sync via push/pull. The human edits, runs the dev server, makes commits in their checkout; the harness works in its own worktrees. Neither sees the other's HEAD changes until they're pushed.
+
+Two details that fall out of this topology, both learned the hard way:
+
+- **The host worktree is *detached*, not on a `main` branch.** Git refuses to check out `main` in two worktrees at once (the human's checkout holds it), and the host never needs a writable branch of its own — it only reads loop infrastructure and spawns per-feature worktrees. So it's created with `git worktree add --detach ../my-app-harness origin/main`.
+- **A detached host doesn't auto-advance, so the loop syncs it.** The dispatcher, `bootstrap-worktree.sh`, `.harness/env`, and — for `/learn` — the memory + root `AGENTS.md` are all read *from* the host worktree. The outer loop therefore targets a thin wrapper, `scripts/harness-tick.sh`, that force-syncs the host to a clean `origin/main` (`git checkout -f --detach origin/main`) and *then* `exec`s the dispatcher. The sync lives in the wrapper, not the dispatcher, because the dispatcher must never reset the file it's currently executing. Feature **pipeline** skills need no such sync — they run in per-feature worktrees that branch from the PRD branch (off main), so they're already current; only loop-level infra rides the host worktree. (See "Inner & Outer Loops" and the harness-host-sync gap below.)
 
 ### `/intent` is the exception — no worktree needed
 
@@ -238,9 +246,16 @@ The harness is two loops stacked, with one piece of deterministic glue between t
 ┌────────────────────────────────────────────────────────────┐
 │  OUTER LOOP — long-lived, low-context, polls disk          │
 │  Fires a tick every N minutes (or on a git event)          │
-│  Invokes one thing: the dispatcher                         │
+│  Invokes one thing: the tick wrapper                       │
 └────────────────────────┬───────────────────────────────────┘
                          │ each tick
+                         ▼
+┌────────────────────────────────────────────────────────────┐
+│  TICK WRAPPER — scripts/harness-tick.sh                    │
+│  Syncs host worktree to a clean origin/main, then execs    │
+│  the dispatcher. Keeps loop infra current. No LLM.         │
+└────────────────────────┬───────────────────────────────────┘
+                         │ exec
                          ▼
 ┌────────────────────────────────────────────────────────────┐
 │  DISPATCHER — scripts/poll-and-dispatch.sh                 │
@@ -256,9 +271,10 @@ The harness is two loops stacked, with one piece of deterministic glue between t
 └────────────────────────────────────────────────────────────┘
 ```
 
-Three layers, independent:
+Layers, independent:
 
 - **Outer loop** owns *triggering*: when does a tick fire? Has no opinion on what the work is.
+- **Tick wrapper** owns *freshness*: force-sync the detached host worktree to a clean `origin/main` so loop-level infra (the dispatcher, `.harness/env`, the `/learn` skill, memory, `AGENTS.md`) is current, then hand off. Deterministic shell — no model. It's the `/loop` target precisely so the dispatcher can stay HEAD-agnostic and never reset its own running file.
 - **Dispatcher** owns *routing*: given the artifacts on disk right now, what's the next skill to run for each active branch? Pure shell — no model in the loop.
 - **Inner loop** owns *the work*: one skill, one fresh context window, runs to completion, exits.
 
@@ -279,7 +295,11 @@ set -euo pipefail
 
 SLUG="$(git config user.email | cut -d@ -f1)"
 WATCH="${WATCH_PATTERN:-prd/${SLUG}/*}"
-WORKTREE_BASE="../$(basename "$PWD")-harness"
+# Derive <repo> from the MAIN worktree (always listed first), NOT $PWD: the
+# dispatcher runs from the detached '<repo>-harness' host worktree, so $PWD would
+# double the suffix. Per-feature worktrees are '<repo>-harness-<feature>' (Inv 3).
+MAIN_WT="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
+WORKTREE_BASE="../$(basename "${MAIN_WT:-$PWD}")-harness"
 MAX_WORKTREES="${MAX_WORKTREES:-1}"
 PLANNING_CAP="${PLANNING_CAP:-2}"         # /spec-planning retries before STUCK
 VALIDATE_CAP="${VALIDATE_CAP:-2}"         # /spec-validate retries before STUCK
@@ -649,7 +669,7 @@ For a single developer starting fresh, do exactly this:
 
 Walk away. Come back to a PR. Merge it. The `/learn` memory PR appears 5 minutes later.
 
-Three commands. No SDK, no cron config, no GitHub Action, no Python script. The outer loop is the Claude Code session you already have open; the dispatcher is the `/poll-and-dispatch` skill, which is a one-line shim around the shell script.
+Three commands. No SDK, no cron config, no GitHub Action, no Python script. The outer loop is the Claude Code session you already have open; the `/poll-and-dispatch` skill is a one-line shim around the tick wrapper, which syncs the host worktree and then runs the dispatcher.
 
 Where the new skill lives:
 
@@ -658,13 +678,13 @@ Where the new skill lives:
 ─────────────────────────────────────────
 ---
 name: poll-and-dispatch
-description: One tick of the harness outer loop. Reads disk state, dispatches one skill per branch.
+description: One tick of the harness outer loop. Syncs the host worktree to main, then dispatches one skill per branch.
 ---
 
-Run `./scripts/poll-and-dispatch.sh` from the repo root and report what it did.
+Run `./scripts/harness-tick.sh` from the harness host worktree root and report what it did.
 ```
 
-That is the entire skill. The intelligence is in the script. The skill exists so `/loop` has a slash-command-shaped target.
+That is the entire skill. The intelligence is in the scripts. The skill exists so `/loop` has a slash-command-shaped target. `harness-tick.sh` syncs the host worktree to a clean `origin/main`, then `exec`s the deterministic dispatcher (`poll-and-dispatch.sh`).
 
 ### Outer runtime options
 
@@ -758,7 +778,7 @@ flowchart TD
   Wait --> Watch
   New -->|Yes| Claim[Atomic rename on origin:<br/>prd/&lt;author&gt;/&lt;f&gt; → feature/&lt;f&gt;<br/>This IS the claim lock]
   Claim -->|push fails: someone else won| Wait
-  Claim -->|push succeeds| Worktree[git worktree add ~/projects/my-app-harness feature/&lt;f&gt;]
+  Claim -->|push succeeds| Worktree[git worktree add ~/projects/my-app-harness-&lt;f&gt; feature/&lt;f&gt;]
   Worktree --> Plan[/spec-planning inside worktree/]
   Plan -->|experts auto-activate<br/>via catalog| SpecOut[(specs/&lt;f&gt;/mainspec.md +<br/>slices/)]
   SpecOut --> Validate[/spec-validate/]
@@ -1178,7 +1198,7 @@ That's the route file not existing — exercising the gap the PRD describes. **F
 Alice's Claude Code `/loop` runs every 5 minutes with `WATCH_PATTERN=prd/alice/*`. Detects `prd/alice/search`.
 
 1. **Atomic rename on origin:** `prd/alice/search → feature/search`. This is the claim lock.
-2. **Worktree:** `git worktree add ~/projects/my-app-harness feature/search`.
+2. **Worktree:** the dispatcher creates the per-feature worktree `git worktree add ~/projects/my-app-harness-search feature/search` (the host worktree `~/projects/my-app-harness` stays detached at main).
 3. **Inside the worktree:**
    - `/spec-planning` → produces `specs/search/mainspec.md` + slices (probably 3: route scaffold, query handler, integration). React + Next.js experts auto-activate via the catalog and add framework-specific BEFORE/AFTER + DO/DON'T sections.
    - `/spec-validate` → 3 parallel Opus reviewers + expert review. Two reviewers (2/3) flag slice 2 missing an edge case for empty-query handling. The main agent classifies this as **impactful** and edits `specs/search/slices/2-query-handler.md` in place to add the edge case to the slice's Inputs and Signal sections. A 1/3 wording finding is discarded; a 3/3 cosmetic suggestion is logged as a nitpick in `validation-log.md`. Sentinel `.validated` written. **No round trip back to planning.**
@@ -1413,7 +1433,10 @@ Items noticed while drafting that we deferred or didn't fully resolve:
 
 - **Cost cap alongside the round cap.** The default cap is 5 rounds, but a single round on a large PR can cost more than 5 rounds on a small one. For projects on the managed service ($15-25/round), 5 rounds is potentially $125. A complementary cost cap — `.harness/feedback-cost-${feature}` accumulating per-round cost from the API response — would let the dispatcher stop on EITHER condition. Skipped in v1 because the recommended self-hosted default with Haiku + Expert-as-context + prompt caching makes round-count the dominant constraint; worth adding when teams scale up to managed-service usage. Owner: project, not the harness — the billing surface varies by reviewer choice.
 - **Context Specs skill migration to satisfy the dispatcher contract.** Five tracked changes against the existing skills (see "The skill contract" subsection): (1) `/intent` produces `prds/<f>/run-prd-test.sh`; (2) `/spec-planning` writes `specs/<f>/.planning-done` sentinel; (3) `/spec-validate` writes `specs/<f>/.validated` sentinel; (4) `/implement-mainspec` runs purely headless (no `AskUserQuestion` tier gates — replace with auto-merge on signal pass); (5) align branch naming from `feat/` to `feature/`. Plus three new skills: `/fix-local-checks` (built — `.claude/skills/dev/fix-local-checks/`), `/learn` (built — `.claude/skills/memory/learn/`), and `/address-feedback` (Flow 2.5 — not yet built). Owner: Rico.
-- **Per-feature worktrees as a scaling escape hatch.** The default single-worktree-per-harness serializes feature work. Most single-developer projects don't need more, but a project with 3+ concurrent features can switch to `WORKTREE="../<repo>-harness-<feature>"` for true parallel inner work. Trade: more disk, more `node_modules`, but better wall-clock. Worth documenting as a one-config-line knob, not a default.
+- **Per-feature worktree naming + host-worktree topology — resolved.** Earlier prose described "one harness worktree that moves between feature branches"; the dispatcher has always created **one ephemeral worktree per in-flight feature** (`<repo>-harness-<feature>`, per Inv 3), and the host worktree (`<repo>-harness`) stays put. Two latent bugs from the mismatch are fixed: (1) `harness-init` Step 8 created the host worktree with `git worktree add ../<repo>-harness main`, which always fails because the human's checkout already holds `main` — now `--detach origin/main`; (2) `WORKTREE_BASE` derived `<repo>` from `$PWD`, doubling the suffix to `<repo>-harness-harness-<feature>` when the dispatcher runs from the host worktree — now derived from the **main worktree**, so per-feature paths are `<repo>-harness-<feature>` regardless of cwd. Concurrency is still governed by `MAX_WORKTREES` (default 1 = FIFO serialization; raise it for bounded parallelism — more disk, better wall-clock), *not* by a worktree-path toggle.
+- **Harness host-worktree sync — resolved.** The host worktree sits at a detached HEAD and does not auto-advance when `main` moves, yet the dispatcher, `bootstrap-worktree.sh`, `.harness/env`, the `/learn` skill, the memory, and the root `AGENTS.md` are all read *from* it. Without a sync step, loop-level infrastructure would freeze at the commit the host worktree was created on. Fix: the outer loop targets a thin wrapper `scripts/harness-tick.sh` that force-syncs the host to a clean `origin/main` (`git checkout -f --detach origin/main` + `git clean -fd`) and then `exec`s the (HEAD-agnostic) dispatcher. The sync lives in the wrapper, before `exec`, so the dispatcher never overwrites its own running file (its `flock` is on `$0`). Feature *pipeline* skills need no sync — they ride per-feature worktrees branched from the PRD branch, so new features pick up updates on their own; only loop infra and `/learn`-time context ride the host worktree. So "merge to main" is the single propagation surface for loop infra too, consistent with the rest of the design.
+- **`/learn` runs in the host worktree, not a dedicated one — a design decision, not a gap.** `/learn` is dispatched with cwd `"."` (the host worktree). One could give it its own throwaway worktree (as the pipeline steps get), but the `harness-tick.sh` sync already guarantees `"."` is a clean checkout of `origin/main` at the start of every tick, which is exactly the state `/learn` needs. The established pattern (reuse the host worktree) is the correct choice here; we may never add a dedicated `/learn` worktree, and that's fine — noted so the absence is understood as deliberate, not overlooked.
+- **`SETUP.md` and `designInvariants.md` are referenced but not checked in.** Both are cited throughout (onboarding list, dispatcher tiebreaker, STUCK body "see SETUP.md") but neither ships in the repo today, and no `harness-init` step generates `SETUP.md`. The invariants are mirrored faithfully in `harness/harness-init/references/invariants-to-preserve.md` (the working source), so this is a documentation-completeness gap, not a behavioral one. When `SETUP.md` is authored it must carry the corrected host-worktree command (`git worktree add --detach ../<repo>-harness origin/main`) and the `harness-tick.sh` sync step. Owner: Rico.
 - **Second-order effects of `/spec-validate` being one-shot (no loop-back to planning).** The dispatcher's state machine walks forward only; `/spec-validate` patches what it can in place and exits. This is correct and intended, but shifts pressure in four places worth being explicit about:
   1. **Spec-planning quality bar rises.** No escape valve exists to redesign a fundamentally wrong plan — validate can only edit, not regenerate. Prompt quality and expert participation in `/spec-planning` matter more than they would in a system where validate could reject.
   2. **PRD-runner becomes the only "is this plan correct?" check left.** Previously a planning↔validation oscillation could have caught a deep plan defect before any code was written. Now a deep defect surfaces at `./prds/<f>/run-prd-test.sh` exit code after `/implement-mainspec` has already burned compute. Recovery cost is real — but offset by the fact that consensus-applied patches catch most of what oscillation would have caught.

@@ -59,12 +59,22 @@ faster.
 sane default. Shorter = more responsive, more API ticks (most are cheap
 no-ops); longer = lazier. This is a UX knob, not a correctness one.
 
+### `WORKTREE_BASE` (rarely set)
+
+Where per-feature worktrees are created: `${WORKTREE_BASE}-${feature}`. The
+dispatcher derives the default from the **main worktree** name — `../<repo>-harness`
+— so per-feature paths come out `../<repo>-harness-<feature>` regardless of which
+worktree the dispatcher runs from. Override in `.harness/env` only if you want them
+somewhere else (e.g. a different disk). Leave unset otherwise.
+
 ## What does NOT go in config
 
 - **The claim mechanism** — it's the atomic rename, hardcoded. Not configurable.
 - **Completion signals** — sentinel files, hardcoded in the dispatcher.
 - **The pipeline order** — that's the `if/elif` chain in the script, edited
   directly (see dispatcher-explained.md), not a config value.
+- **The host-worktree sync** — done by `scripts/harness-tick.sh` (the `/loop`
+  target), not a config value. The loop must target the wrapper, not the dispatcher.
 
 ## The `.harness/` directory
 

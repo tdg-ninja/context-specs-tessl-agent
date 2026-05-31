@@ -16,7 +16,15 @@ set -euo pipefail
 
 SLUG="$(git config user.email | cut -d@ -f1)"
 WATCH="${WATCH_PATTERN:-prd/${SLUG}/*}"
-WORKTREE_BASE="../$(basename "$PWD")-harness"
+# Derive the repo name from the MAIN worktree (always listed first by
+# `git worktree list`), NOT from $PWD: the dispatcher runs from the detached
+# '<repo>-harness' HOST worktree, so basename "$PWD" would double the suffix to
+# '<repo>-harness-harness'. Per Inv 3 each in-flight feature gets its own
+# ephemeral worktree at '<repo>-harness-<feature>'; the host worktree stays put,
+# detached at origin/main (re-synced each tick by scripts/harness-tick.sh).
+# Overridable from .harness/env (sourced below).
+MAIN_WT="$(git worktree list --porcelain | sed -n '1s/^worktree //p')"
+WORKTREE_BASE="../$(basename "${MAIN_WT:-$PWD}")-harness"
 MAX_WORKTREES="${MAX_WORKTREES:-1}"
 PLANNING_CAP="${PLANNING_CAP:-2}"         # /spec-planning retries before STUCK
 VALIDATE_CAP="${VALIDATE_CAP:-2}"         # /spec-validate retries before STUCK
@@ -345,6 +353,9 @@ done
 #    routes facts to: Expert shards, invariants, AGENTS.md pointers, or drafted
 #    lints. ls-remote makes it idempotent across nodes: first to push learn/<sha>
 #    wins; others exit. (Inv 7)
+#    /learn runs with cwd "." (the HOST worktree). That worktree is force-synced to
+#    a clean origin/main at the start of every tick by scripts/harness-tick.sh, so
+#    "." is always a fresh checkout of main — no dedicated /learn worktree needed.
 LAST="$(cat .harness/last-main-sha 2>/dev/null || echo HEAD~50)"
 CUR="$(git rev-parse origin/main)"
 if [[ "${CUR}" != "${LAST}" ]] \

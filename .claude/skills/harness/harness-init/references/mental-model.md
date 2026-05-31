@@ -17,6 +17,9 @@ isolated worktree, until a PR is open against `main` for a human to merge.
 OUTER LOOP        a long-lived Claude Code session (/loop 5m), or cron, or CI.
   |               Owns TIMING only. Knows nothing about the work.
   v
+TICK WRAPPER      scripts/harness-tick.sh. Syncs the host worktree to a clean
+  |               origin/main, then execs the dispatcher. Keeps loop infra fresh.
+  v
 DISPATCHER        scripts/poll-and-dispatch.sh. Pure bash, zero LLM calls.
   |               Owns ROUTING: reads disk, decides the next skill per branch,
   v               shells out. The if/elif chain IS the state machine.
@@ -25,7 +28,27 @@ INNER LOOP        one fresh `claude -p "/skill ..."` subprocess per step.
 ```
 
 You can swap any layer without touching the others. harness-init sets up the
-outer loop and the dispatcher; the inner skills come from the catalog.
+outer loop, the tick wrapper, and the dispatcher; the inner skills come from the
+catalog.
+
+## Three checkouts (the worktree topology)
+
+```
+<repo>/                       the human's checkout. On `main`. Never touched by the harness. (Inv 6)
+<repo>-harness/               the harness HOST worktree. Detached at origin/main; runs the loop
+                              + /learn. harness-tick.sh re-syncs it to main every tick. Does NOT
+                              move between feature branches.
+<repo>-harness-<feature>/     EPHEMERAL per-feature worktree. One per in-flight feature; the
+                              dispatcher creates it (off feature/<feature>) and tears it down on
+                              merge/close. (Inv 3: worktree ↔ branch 1:1.)
+```
+
+Two reasons the host is **detached**, not on a `main` branch: git refuses to check
+out `main` in two worktrees at once (the human's checkout holds it), and the host
+never needs a writable branch of its own — it only reads loop infra and spawns
+per-feature worktrees. `WORKTREE_BASE` derives `<repo>` from the **main worktree**
+(not `$PWD`), so per-feature paths are always `<repo>-harness-<feature>` no matter
+which worktree the dispatcher runs from.
 
 ## Why the split matters for setup
 
