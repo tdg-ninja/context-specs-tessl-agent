@@ -1,219 +1,221 @@
 # Context Specs
 
-**Define domain knowledge once. It flows through planning, validation, and implementation automatically.**
+**Context engineering for agent-first development.**
 
-Composable Agent Skills for spec-driven development designed to be extended with your organizations "Expert" knowledge.
+The biggest lever you have when building with a coding agent is what goes into
+its context window — and what stays out. Context Specs is that lever, pulled at
+three layers that build on each other. Pull all three and the work inverts: you
+describe a feature and pin down what "done" means, then the project plans it,
+implements it, verifies it, and hands you a finished pull request. What's left
+for you is the judgment a model can't supply — understanding the problem,
+deciding what's worth building, and telling whether what came back is right.
+
+It ships as composable [Agent Skills](#installation). Install once, invoke via
+slash commands, extend with your organization's own expertise.
+
+> **New here? Read [the full story](./docs/README.md)** — six short chapters that
+> take you from the idea to the mindset shift, in order.
 
 ---
 
-What goes in or what stays out of your coding agents context window is the biggest lever you have as a developer when agentic coding.
-Context Specs focuses on solving this problem.  Providing the right context at the right time.  All while, using your organization's expertise.
+## The idea: the right context at the right time
 
+A coding agent is only ever as good as the context it's reasoning over — the
+actual tokens in its window at the moment it decides. That window is finite, and
+it degrades: older instructions lose influence, autonomously-retrieved files
+crowd out relevant ones, and compaction silently drops things when it fills.
 
-## How It Works
+Context engineering is the discipline of getting the right context into that
+window at the right time, and keeping everything else out — the agent reading
+what it needs, when it needs it, from files it can navigate on its own. The three
+layers below are that same idea at a widening scope: first one feature, then a
+whole project that builds itself, then the way you work day to day.
+
+→ [Chapter 1 — Context engineering](./docs/1-context-engineering.md)
+
+---
+
+## Layer 1 — Spec-Driven Development
+
+*Context engineering, applied to building one feature. Usable on its own.*
 
 ![Experts](./experts.png)
 
-You create **domain experts** from your documentation using a single prompt with `/expert-sdd-creator`. Those experts automatically participate across the workflow: they inform spec planning with domain-specific context, validate specs through multi-agent consensus review, and provide runtime signal during implementation. 
+You create **domain experts** from your own documentation with
+[`/expert-sdd-creator`](./.claude/skills/specs/expert-sdd-creator/SKILL.md) —
+define the knowledge once, and it flows automatically through every phase:
 
-Context Specs ships as a set of Agent Skills. Install once, invoke via slash commands.
+1. **Spec Planning** ([`/spec-planning`](./.claude/skills/specs/spec-planning/SKILL.md)) —
+   research the codebase, pull in matching experts, and write the plan to disk as
+   a **mainspec** plus temporally-ordered **slices**. Planning lives *outside* the
+   context window, so it can't decay or compact away; slicing feeds the
+   implementer only the piece it's working on.
+2. **Spec Validation** ([`/spec-validate`](./.claude/skills/specs/spec-validate/SKILL.md)) —
+   3+ independent Opus reviewers plus expert review, with consensus scoring
+   (3/3 = very high, 2/3 = high) turning agreement into a confidence signal.
+   Impactful findings are applied in place.
+3. **Implementation** ([`/implement-mainspec`](./.claude/skills/dev/implement-mainspec/SKILL.md)) —
+   slices implemented in dependency order, sequential or auto-parallelized across
+   git worktrees, each gated by **Signal** (the runtime feedback loop, below).
 
----
-
-## The Expert Composability Pattern
-
-This is the core value proposition. Create an expert once, and it flows through three phases automatically:
-
-1. **Create an expert** — Use `/expert-sdd-creator` with your domain documentation (framework docs, internal library guides, architecture patterns). It generates a complete expert directory: `SKILL.md` + `references/` + `scripts/`.
-
-2. **That expert participates in Spec Planning** — When you run `/spec-planning`, the planner reads the expert catalog. If trigger keywords match your feature, the expert is auto-invoked to curate domain-specific context into the spec (framework patterns, DO/DON'T examples, type conventions).
-
-3. **That expert participates in Spec Validation** — When you run `/spec-validate`, after multi-agent consensus, expert review runs as a dedicated phase. Relevant experts validate the spec for domain-specific anti-patterns, misuse, and gaps.
-
-4. **That expert provides Signal during Implementation** — Each expert can include signal scripts that validate runtime behavior during `/implement-slice` and `/implement-mainspec`. The signal section in every slice references which expert signal to invoke.
-
-**Composable**: Multiple experts activate for a single feature. A "React" expert and a "DynamoDB" expert both contribute when you're building a full-stack feature.
-
-**Extensible**: Organizations add private experts for internal libraries, conventions, and patterns — without modifying any existing skills.
-
----
-
-## Signal: The Dev-Code Feedback Loop
+**Composable, not hardcoded.** Multiple experts activate for one feature — a
+React expert and a DynamoDB expert both contribute on a full-stack change. Add or
+remove experts without touching any existing skill; organizations layer in
+private experts for internal libraries the same way.
 
 ![Signal](./signal.png)
 
-Signal is the runtime counterpart to expert guidance. Where experts curate context *before* implementation, signal validates behavior *during* implementation.
+**Signal is half of what an expert is.** Where the expert curates context
+*before* implementation, Signal validates behavior *during* it: run the tests,
+hit the endpoint, check the build, iterate until it passes. Unit tests are the
+default; experts can define richer ones.
 
-Every slice spec includes a Signal section that names a signal skill and expected behaviors. During implementation, after code is written, the agent invokes the signal — runs tests, calls endpoints, checks build output — and iterates until the signal validates success. This turns implementation from a single pass into a feedback loop where the agent knows if it's on track.
-
-Unit tests are the default signal, but experts can define custom signals: deploy to a lower environment and check logs, run browser automation and take screenshots, call endpoints and validate responses. Each expert generates `run_signal.sh` + `signal-workflow.md` as part of its structure — Signal Mode is half of what an expert IS.
-
----
-
-## Available Skills
-
-Five built skills, in workflow order.
-
-### Expert SDD Creator (`/expert-sdd-creator`)
-
-Meta-skill: create domain experts from documentation in a single prompt.
-
-**Input**: Path to a markdown file with domain knowledge + optional steering context (what to focus on, specific use cases).
-
-**Output**: A complete expert directory:
-```
-expert-{name}/
-├── SKILL.md                    # Expert Mode + Signal Mode
-├── references/
-│   ├── {topic-1}.md            # Synthesized from input docs
-│   ├── {topic-N}.md
-│   └── signal-workflow.md      # How signal validates behavior
-└── scripts/
-    ├── run_signal.sh           # Main signal execution
-    └── {helper}.sh             # Additional helpers as needed
-```
-
-**Auto-registration**: Runs `validate_expert.sh` for structure compliance, then `register_expert.sh` to add entries to the `experts.md` and `signals.md` catalogs. Reports line numbers of insertions.
-
-**Signal approach auto-detection**: Analyzes the domain to select the right signal strategy — test runners for testing frameworks, endpoint calls for APIs, build checks for build tools, schema validation for config, command parsing for CLI tools.
-
-### Spec Planning (`/spec-planning`)
-
-Turns user ideas into structured spec plans using Spec-Driven Development. Researches the codebase to ground specs in reality, asks clarifying questions, and writes temporal-ordered specs with clear dependencies.
-
-**What it produces:**
-- A mainspec (`/specs/<feature>/mainspec.md`) defining the complete end state
-- Ordered slices (`/specs/<feature>/slices/`) — temporal chunks of intent, each focused on WHAT and WHY
-- A Slice Dependency Map (table + Mermaid DAG) in every mainspec — the single source of truth for slice ordering
-- A Signal section in every slice — how to validate the implementation at runtime
-
-**Context engineering practices built into every spec:**
-- **BEFORE/AFTER with precise file paths** — Show exact current state vs desired state, eliminating ambiguity
-- **Type contracts first** — Define interfaces and schemas upfront; can be an entire slice focused only on types
-- **DO/DON'T counterexamples** — One good example, one bad example with explanation of why the bad version fails
-- **Narrative temporal flows with MermaidJS** — Sequence diagrams and flowcharts showing causality across system layers
-- **Forward-looking requirements** — Each slice documents what future slices will need, preventing rework
-- **BEFORE/AFTER directory structure** — Show structural changes with inline comments explaining what's new and why
-
-**Expert integration**: Reads the expert catalog (`references/experts.md`) at the start of every planning session. Auto-invokes relevant experts when trigger keywords match.
-
-### Spec Validate (`/spec-validate`)
-
-Validates a mainspec and its slices using parallel subagent consensus, then expert review.
-
-**Phase 1 — Multi-agent consensus**: Spawns 3+ parallel subagents (Opus) that independently review the spec. Each agent gets the same prompt and reviews independently. Consensus on issues indicates higher confidence:
-
-| Consensus | Confidence | Interpretation |
-|-----------|------------|----------------|
-| 3/3 found | Very High | Definitely a real issue — prioritize fixing |
-| 2/3 found | High | Likely a real issue — should fix |
-| 1/3 found | Medium | Could be valid or false positive — use judgment |
-
-**Phase 2 — Expert review**: After subagent results are collected, relevant `expert-*` skills are invoked for domain-specific validation — framework anti-patterns, internal library misuse, security concerns, infrastructure issues.
-
-**Phase 3 — Consolidation**: Deduplicates findings across all subagents and expert review. Groups by consensus level. Presents a unified validation summary with prioritized recommendations.
-
-### Implement Slice (`/implement-slice`)
-
-Implements a single slice with Signal validation and unit tests. Follows a focused three-step workflow:
-
-1. **Implement** — Read the slice file, then implement all code specified in the slice
-2. **Signal Validation** — Check the slice's Signal section. If a signal skill is specified, invoke it and iterate until the expected behavior is validated. If "None", skip to tests
-3. **Unit Tests** — Create or update unit tests for the implemented functionality
-
-**TODO tracking**: Creates a three-item TODO list per slice (`Implement`, `Signal Validation`, `Unit Tests`) and marks each in progress/complete as work proceeds.
-
-**Signal processing**: Each slice includes a Signal section naming a signal skill and expected behaviors. After implementing code, the agent invokes the signal, follows guidance, and iterates until success.
-
-### Implement Mainspec (`/implement-mainspec`)
-
-Orchestrates implementation of an entire mainspec — all slices, in dependency order.
-
-**Auto-detects execution mode:**
-- **Sequential** (3 or fewer slices): Implements slices one at a time with direct commits to the current branch. Simple and linear.
-- **Parallel** (more than 3 slices): Dependency-aware tiered execution with git worktree isolation, per-slice PRs, and tier gating.
-
-**How parallel mode works:**
-1. `compute_tiers.py` parses the Slice Dependency Map, performs topological sort, assigns slices to tiers
-2. **Tier 0** (foundation): Implemented sequentially on the feature branch via `slice-implementer` subagents
-3. **Subsequent tiers**: Git worktrees created per slice, `slice-implementer` subagents spawned in parallel (up to 7 concurrent), orchestrator handles all git operations
-4. **Tier gating**: After each tier, PRs are created and presented for review. All PRs must merge before the next tier starts.
-
-**Slice-implementer agent**: A focused subagent (`slice-implementer.md`) with `implement-slice` preloaded and `bypassPermissions` mode. It implements code; the orchestrator handles git.
-
-**Signal invocation**: Each slice's signal is processed during implementation — the feedback loop runs per-slice, not just at the end.
+→ [Chapter 2 — Spec-Driven Development](./docs/2-spec-driven-development.md)
 
 ---
 
-## Design Philosophy
+## Layer 2 — The agent harness
 
-### Composable, Not Rigid
+*Your project runs the Layer 1 loop for you — and gets better every merge.*
 
-Experts are composed, not hardcoded. Add or remove experts without modifying existing skills. Multiple experts compose for a single feature — a React expert and a DynamoDB expert both contribute when building a full-stack feature. Organizations extend Context Specs with private experts for internal libraries and conventions.
+The whole promise, in one sequence:
 
-### Why Temporal Slicing?
+> Describe a feature to [`/intent`](./.claude/skills/intent/SKILL.md) and confirm
+> it. Walk away. The project plans the feature, validates the plan, implements
+> it, runs its checks, opens a pull request, answers the reviewer — and hands you
+> back a PR that's ready to merge.
 
-Features have a natural dependency order. Slicing by intent (WHAT needs to happen) rather than by component (frontend/backend) preserves this order. Each slice captures a coherent unit of work with clear dependencies on prior slices and clear contracts for future slices. The dependency DAG enables automatic parallelization — `compute_tiers.py` performs topological sort to identify which slices can run concurrently.
+```mermaid
+flowchart LR
+  Intent["/intent\n(you, once)"] --> Plan["/spec-planning"]
+  Plan --> Validate["/spec-validate"]
+  Validate --> Implement["/implement-mainspec"]
+  Implement --> Checks["local-checks"]
+  Checks --> PR[Open PR]
+  PR --> Review[Reviewer ⇄ /address-feedback]
+  Review --> Ready[Ready for your review]
+  Ready --> You([You merge])
+```
 
-### Why Multi-Agent Validation?
+You can trust a machine to run this unattended because it keeps **no hidden
+state**. The complete state of every feature is observable from the files on disk
+and the branches in git. A small, deterministic dispatcher — **no LLM in the loop**
+— reads that state each tick and shells out to a fresh `claude -p` process per
+step, so no step inherits another's polluted window and crash recovery is free.
+Four layers of verification (pre-commit, slice signals, `local-checks`, and a
+runnable `run-prd-test.sh` definition of done) can't be talked past — and when a
+step genuinely can't make progress, the harness stops and hands you a
+**diagnosis-first** report rather than faking success.
 
-A single reviewer has blind spots. Independent parallel review by 3+ Opus agents catches what any one reviewer would miss. Consensus scoring provides quantitative confidence (3/3 = very high, 2/3 = high, 1/3 = medium) rather than a binary pass/fail. Expert review adds a domain-specific layer on top of general-purpose validation.
+**It also remembers.** When code lands on `main`, the harness updates its own
+long-term memory: [`/learn`](./.claude/skills/memory/learn/SKILL.md) reads the
+merged diff and routes what's worth keeping into the Expert, the `AGENTS.md` map,
+or a custom lint the agent can't ship past — so the next feature starts knowing
+what the last one taught. One write path, ground truth only, behind a human
+merge.
 
-### Context Engineering Built-In
+Setting all this up is itself a guided skill:
+[`/harness-init`](./.claude/skills/harness/harness-init/SKILL.md).
 
-Specs are designed around context engineering principles: planning happens outside the agent's context window (in structured documents), progressive disclosure feeds only the current slice to the implementation agent, and signal sections provide focused feedback without polluting the main context. See [Best Practices](./best-practices.md) for the full treatment of context engineering in spec-driven development.
+→ [Chapter 3 — The agent harness](./docs/3-the-agent-harness.md) ·
+[Chapter 4 — Continuous improvement](./docs/4-continuous-improvement.md)
 
 ---
 
-## Project Structure
+## Layer 3 — The human loop
+
+*Once the machine does the typing, what's left is the part only you can do.*
+
+The governing line is Karpathy's: *you can outsource your thinking, but you can't
+outsource your understanding.* The harness took the verifiable work — syntax, API
+recall, mechanics. The human loop is you, working the unverifiable: whether this
+is the right thing to build, whether the abstraction is sound, whether it feels
+right.
 
 ```
-.claude/
-  agents/
-    slice-implementer.md          # Focused subagent for parallel execution
-  skills/
-    specs/
-      spec-planning/              # Structured spec creation with expert integration
-        SKILL.md
-        references/
-          experts.md              # Expert catalog
-          signal.md               # Signal catalog
-      spec-validate/              # Multi-agent consensus validation
-        SKILL.md
-      expert-sdd-creator/         # Meta-skill: create domain experts
-        SKILL.md
-        references/
-          catalog-formats.md
-          expert-structure.md
-          signal-patterns.md
-        scripts/
-          register_expert.sh
-          validate_expert.sh
-    dev/
-      implement-slice/            # Single slice implementation
-        SKILL.md
-      implement-mainspec/         # Full mainspec orchestration
-        SKILL.md
-        references/
-          error-handling.md
-          release-strategy.md
-          subagent-prompt-template.md
-        scripts/
-          compute_tiers.py        # DAG parser + topological sort
-          tests/
-            test_tier_computation.py
-    intent/                       # [Planned]
-    qa/                           # [Planned]
-    code-review/                  # [Planned]
-    ops/                          # [Planned]
-    feedback/                     # [Planned]
+Understanding ──▶ Intent ──▶ [ the harness builds ] ──▶ Evaluate
+   /wiki-init      /intent                              /evaluate-pr
+                                                        /evaluate-sessions
 ```
+
+- **Understanding** ([`/wiki-init`](./.claude/skills/understand/wiki-init/SKILL.md)) —
+  a Karpathy "LLM Wiki" that builds *your* model of the problem space, so you
+  arrive at Intent with sharper questions.
+- **Intent** ([`/intent`](./.claude/skills/intent/SKILL.md)) — turn that
+  understanding into a PRD plus a runnable definition of done.
+- **Evaluate** ([`/evaluate-pr`](./.claude/skills/evaluate/evaluate-pr/SKILL.md) +
+  [`/evaluate-sessions`](./.claude/skills/evaluate/evaluate-sessions/SKILL.md)) —
+  walk the change to build real understanding, *and* read the build trail to find
+  where the project's context served the agents or failed them. The flywheel:
+  *observe a trace → capture it as an eval → fix the context → it persists as a
+  regression test.*
+
+Your loop's output is the harness's input; the harness's output is your loop's
+input. When you evaluate, you don't just approve work — you improve the thing
+that produced it.
+
+→ [Chapter 5 — The human loop](./docs/5-the-human-loop.md)
+
+---
+
+## The shift
+
+Put the three layers together and your project stops being a codebase you type
+into and becomes a **harness you tune**. The code is an output of the system; your
+attention moves from syntax to context. Three things stay yours: deep
+understanding of the problem space, theorizing and expressing intent, and
+evaluating outcomes to improve the context so every future feature benefits.
+
+A codebase you type into is a constant cost. A harness you tune is an
+appreciating asset — each feature leaves it a little more capable of building the
+next one.
+
+→ [Chapter 6 — The mindset shift](./docs/6-the-mindset-shift.md)
+
+---
+
+## Getting started
+
+**Set it up.** [Install the skills](#installation), then create your project's
+custom harness with
+[`/harness-init`](./.claude/skills/harness/harness-init/SKILL.md) and start it
+with `/loop 5m /poll-and-dispatch`. *(Optionally run
+[`/wiki-init`](./.claude/skills/understand/wiki-init/SKILL.md) first to build your
+own understanding of the problem space.)*
+
+Your harness loop is now running. Here's how you feed it:
+
+```mermaid
+flowchart LR
+  Intent["/intent\nyou express intent"] --> Build["the harness builds\nthe PR"]
+  Build --> Eval["/evaluate-pr · /evaluate-sessions\nyou judge it"]
+  Eval --> Merge["merge → /learn\nimproves the context"]
+  Merge --> Intent
+```
+
+1. **You start it.** `/intent` a feature — a PRD plus a runnable definition of
+   done.
+2. **The harness builds.** It plans, validates, implements, verifies, and opens a
+   PR - all autonomously.
+3. **You close the loop.** Review the change with `/evaluate-pr`, then merge.
+   When something comes out wrong, fix the context *first*: the code is wrong
+   because the harness was working from bad context, and `/evaluate-sessions` traces
+   it back so you can correct it — *then* fix the code. The code fix repairs this
+   one feature; the context fix, picked up by `/learn` on merge, keeps the same
+   mistake out of every feature after.
+
+Your intent is the harness's input; its PR is your evaluation's input; evaluating
+improves the context that feeds the next round. That's the cycle you live in.
+
+*(Only want the spec workflow? Layer 1 stands on its own — drive `/spec-planning`
+→ `/spec-validate` → `/implement-mainspec` by hand, no harness needed.)*
 
 ---
 
 ## Installation
 
-Context Specs has two types of installable content — **skills** and **subagents** — each with its own installation step.
+Context Specs has two kinds of installable content — **skills** and
+**subagents** — each with its own step.
 
 ### Skills
 
@@ -221,7 +223,7 @@ Context Specs has two types of installable content — **skills** and **subagent
 npx skills add https://github.com/capitalone/context-specs
 ```
 
-This installs all skills into your project's `.claude/skills/` directory.
+Installs all skills into your project's `.claude/skills/` directory.
 
 ### Subagents
 
@@ -229,84 +231,35 @@ This installs all skills into your project's `.claude/skills/` directory.
 curl -fsSL https://raw.githubusercontent.com/capitalone/context-specs/main/install-agents.sh | bash
 ```
 
-Run from your target project directory. This copies agent definitions (e.g. `slice-implementer.md`) into `.claude/agents/`. Safe to re-run — existing agent files are updated to the latest version.
-
-
----
-
-## Quick Start
-
-**1. Create an expert** from your domain documentation:
-```
-/expert-sdd-creator
-Docs: /path/to/your-framework-docs.md
-Focus on: component patterns, testing conventions, common pitfalls
-```
-
-**2. Plan a feature** — the expert auto-activates when triggers match:
-```
-/spec-planning
-```
-
-**3. Validate the spec** — multi-agent consensus + expert review:
-```
-/spec-validate
-```
-
-**4. Implement** — sequential or parallel, based on slice count:
-```
-/implement-mainspec
-```
+Run from your target project directory. Copies agent definitions (e.g.
+`slice-implementer.md`) into `.claude/agents/`. Safe to re-run.
 
 ---
 
-## Vision: The Full SDLC Loop
+## The skills
 
-The five built skills cover spec planning and development. The full vision is a continuous loop where specs flow through every SDLC phase:
-
-![SDLC Flow](./sdlc.png)
-
-**Intent** captures what to build. **Spec Planning** turns intent into structured specs. **Dev** implements specs with signal feedback. **Integration Tests** validate across service boundaries. **Code Review** verifies original intent is met. **Ops** uses specs to understand production changes. **Feedback** analyzes production data to generate new intent, completing the loop.
-
-| Phase | Status | Skills |
-|-------|--------|--------|
-| Spec Planning | Built | `spec-planning`, `spec-validate`, `expert-sdd-creator` |
-| Dev | Built | `implement-slice`, `implement-mainspec` |
-| Intent | Planned | — |
-| Integration Tests | Planned | — |
-| Code Review | Planned | — |
-| Ops | Planned | — |
-| Feedback | Planned | — |
-
-### Evals (Future)
-
-Two levels of evaluation will measure and improve the SDLC:
-- **SDLC-level evals**: Track metrics across all phases to identify bottlenecks and context loss
-- **Phase-level evals**: Evaluate each skill independently — are specs comprehensive? Are implementations correct? Are reviews catching issues?
+| Layer | Skill | Does |
+|---|---|---|
+| **1 · SDD** | `/expert-sdd-creator` | Create a domain expert from your docs |
+| | `/spec-planning` | Idea → mainspec + temporal slices |
+| | `/spec-validate` | Multi-agent consensus + expert review |
+| | `/implement-slice`, `/implement-mainspec` | Implement with Signal feedback, sequential or parallel |
+| **2 · Harness** | `/harness-init` | Guided setup of the local harness |
+| | `/intent` | Idea → PRD + runnable definition of done |
+| | `/fix-local-checks` | Honest fixes for a failing pre-PR gate |
+| | `/address-feedback` | Triage and answer reviewer findings |
+| | `/learn` | Post-merge long-term memory update |
+| **3 · Human loop** | `/wiki-init` | Stand up a Karpathy LLM-wiki (Understanding) |
+| | `/evaluate-pr` | Evaluate the change; build understanding |
+| | `/evaluate-sessions` | Evaluate the build trail; capture evals |
 
 ---
 
-## Key Principles
+## Documentation
 
-| Principle | Description |
-|-----------|-------------|
-| Define Once, Use Everywhere | Experts and specs flow through planning, validation, and implementation |
-| Composable, Not Rigid | Multiple experts activate per feature; add your own without modifying existing |
-| Temporal Ordering | Slices ordered by dependency, enabling automatic parallelization |
-| Consensus Over Binary | Multi-agent validation with confidence scoring |
-| WHAT Not HOW | Specs define intent; implementation details left to dev phase |
-| Signal-Driven Feedback | Runtime validation during implementation, not just after |
-
----
-
-## Learn More
-
-- [Best Practices](./best-practices.md) — When to use SDD, context engineering principles, senior leverage, PM benefits
-- [Spec Planning Skill](./.claude/skills/specs/spec-planning/SKILL.md) — Full context engineering practices for spec creation
-- [Spec Validate Skill](./.claude/skills/specs/spec-validate/SKILL.md) — Multi-agent consensus validation details
-- [Expert SDD Creator Skill](./.claude/skills/specs/expert-sdd-creator/SKILL.md) — How experts are generated and registered
-- [Implement Slice Skill](./.claude/skills/dev/implement-slice/SKILL.md) — Single slice implementation with signal validation
-- [Implement Mainspec Skill](./.claude/skills/dev/implement-mainspec/SKILL.md) — Orchestration, tiers, and parallel execution
+- **[The full story](./docs/README.md)** — the six chapters, read in order.
+- **[Design invariants](./docs/invariants.md)** — the properties that make the
+  harness safe to leave running.
 
 ---
 
