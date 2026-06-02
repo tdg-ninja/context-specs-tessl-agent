@@ -143,6 +143,33 @@ signal_human_review() {
   gh pr comment "$branch" --body-file "$body" 2>/dev/null || true
 }
 
+# /learn handoff (step 5): post the headless session trail on the learn/<sha> PR
+# so the human evaluating the memory changes can open the trace and see exactly
+# what /learn read and why it routed each fact as it did. Mirrors
+# signal_human_review (reuses render_sessions_table); framed for troubleshooting a
+# memory decision, not a review handoff. $feature is the per-sha session label
+# (learn-<sha>) so the table shows exactly this run; $branch is learn/<sha>.
+signal_learn_review() {
+  local feature="$1" branch="$2"
+  local body=".harness/learn-review-body-${feature}.md"
+  {
+    echo "## /learn session — why memory changed"
+    echo
+    echo "These memory edits (Expert shards, invariants, AGENTS.md pointers,"
+    echo "candidate lints) were written by a headless \`/learn\` over the merged"
+    echo "diff. If a routing call here looks wrong — a fact in the wrong surface,"
+    echo "an overfit lint, an Expert shard that says too much — open the trace"
+    echo "below to see exactly what \`/learn\` read and how it decided, before you"
+    echo "accept or revise it."
+    echo
+    echo "**Session** (open the trace at"
+    echo "\`~/.claude/projects/<encoded>/<session-id>.jsonl\`):"
+    echo
+    render_sessions_table "$feature"
+  } > "$body"
+  gh pr comment "$branch" --body-file "$body" 2>/dev/null || true
+}
+
 # Signal STUCK to the human via the PR. Opens a draft PR if none exists yet
 # (planning/validate can STUCK before any PR is open). Body includes the step,
 # the cap, the per-feature session log (failing step + upstream chain), an
@@ -450,8 +477,21 @@ if [[ "${CUR}" != "${LAST}" ]] \
   # reaps). Without this guard the per-tick force-sync races /learn and wipes its
   # in-flight Expert + learn/<sha> branch. (Inv 5)
   echo $$ > .harness/learn-running
-  run_claude learn "_main" 1 "." "/learn --since ${LAST} --sha ${CUR}"
+  # Per-sha session label so this run gets its own .harness/sessions-learn-<sha>.tsv
+  # and render_sessions_table surfaces exactly this /learn run on its PR (not the
+  # accumulated trail of every past run, as a shared _main label would).
+  run_claude learn "learn-${CUR}" 1 "." "/learn --since ${LAST} --sha ${CUR}"
   rm -f .harness/learn-running
+  # Surface this run's session on the learn PR so the human evaluating the memory
+  # changes can open the trace and troubleshoot why /learn routed as it did. Only
+  # if /learn actually opened the PR (it may find nothing to learn, or fail first).
+  if gh pr view "learn/${CUR}" >/dev/null 2>&1; then
+    signal_learn_review "learn-${CUR}" "learn/${CUR}"
+  fi
+  # One-shot cleanup: the session id now lives in the PR comment (what the human
+  # reads), and the ls-remote guard above prevents a re-run, so these are safe to
+  # drop — and step-4 cleanup only sweeps feature/*, never learn branches. (Inv 7)
+  rm -f ".harness/sessions-learn-${CUR}.tsv" ".harness/learn-review-body-learn-${CUR}.md"
 fi
 echo "${CUR}" > .harness/last-main-sha
 

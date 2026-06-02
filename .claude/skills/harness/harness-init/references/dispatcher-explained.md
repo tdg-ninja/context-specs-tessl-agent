@@ -59,7 +59,7 @@ Explain these as the "why it's safe" of the script. Each maps to an invariant.
 | step 4 | cleanup merged/closed PRs | Safe to extend (e.g., notify on cleanup). |
 | step 5 | post-merge `/learn` (memory update, ground truth only) | Debounce/idempotency live here. |
 | step 3 (review) | the feedback gate has three branches: `reviewer_converged` (marker present) → write `human-review-<f>`; else findings → `/address-feedback`; else cap → STUCK | Convergence is the marker; the gate order matters (converge before the findings loop). |
-| helpers | `run_claude` (session-tagged invocation + TSV log), `signal_stuck` (PR-body STUCK signal), `render_sessions_table` (shared trail renderer), `signal_human_review` (the convergence handoff comment), `reviewer_converged` (marker check) | Used by §3 steps that call `claude -p`, hit a cap, or detect convergence. |
+| helpers | `run_claude` (session-tagged invocation + TSV log), `signal_stuck` (PR-body STUCK signal), `render_sessions_table` (shared trail renderer), `signal_human_review` (the convergence handoff comment), `signal_learn_review` (the learn-PR session comment), `reviewer_converged` (marker check) | Used by §3 steps that call `claude -p`, hit a cap, or detect convergence; `signal_learn_review` by §5. |
 
 ## The bootstrap hook — project-owned worktree provisioning
 
@@ -171,6 +171,12 @@ A few small helpers, all above step 1, do the legwork:
 - **`signal_human_review <feature>`** — the convergence counterpart of
   `signal_stuck`: posts the "Ready for your review" comment with the session trail
   (via the shared `render_sessions_table`) so the human can `/evaluate-pr`.
+- **`signal_learn_review <feature> <branch>`** — the step-5 counterpart: after
+  `/learn` opens its `learn/<sha>` PR, posts the headless session trail (same
+  `render_sessions_table`) framed for troubleshooting *why* `/learn` routed each
+  fact as it did, so the human evaluating the memory PR can open the trace before
+  accepting or revising it. Uses a per-sha session label (`learn-<sha>`) so the
+  table shows exactly that run.
 
 If your `claude -p` version doesn't support `--session-id`, swap that flag for
 `--output-format json` and parse `session_id` from stdout — `run_claude` is the

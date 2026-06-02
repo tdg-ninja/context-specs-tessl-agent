@@ -137,6 +137,10 @@ touched and the consensus vote. Open the `learn/<sha>` PR. Done.
   `AGENTS.md` files across the repo.
 - **Completion signal:** the pushed `learn/<sha>` branch + open PR. Idempotent via
   `git ls-remote origin learn/<sha>`.
+- **Session trail:** after the PR opens, the dispatcher (`signal_learn_review`)
+  attaches this run's headless `claude -p` session as a PR comment, so the human
+  evaluating the memory changes can open the trace and troubleshoot *why* `/learn`
+  routed a fact as it did. No action needed in this skill — the dispatcher posts it.
 
 ## Hard nevers
 - **Never write memory for uncommitted or planned work** (P1). Diff against main only.
