@@ -1,6 +1,6 @@
 ---
 name: evaluate-pr
-description: Evaluate a PR the harness produced — walk the change, run the system together, and build a firm understanding before you merge it. Use after the harness hands a converged PR to you for review (the "Ready for your review" comment), or any time you want to deeply review an agent-authored PR. The human-attentive skill at the back of the chain; the mirror of /intent. Outcomes: merge, close, or fix-it-yourself-and-push - no handing work back to the loop.
+description: Evaluate a PR the harness produced — walk the change, run the system together, and build a firm understanding before you merge it. Use after the harness hands a converged PR to you for review (the "Ready for your review" comment), or any time you want to deeply review an agent-authored PR. The human-attentive skill at the back of the chain; the mirror of /intent. Outcomes — merge, close, or fix-it-yourself-and-push - no handing work back to the loop.
 ---
 
 # evaluate-pr

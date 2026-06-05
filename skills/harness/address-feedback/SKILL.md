@@ -1,6 +1,6 @@
 ---
 name: address-feedback
-description: Respond to an automated reviewer's findings on the current feature PR — a narrow, headless responder. Triages each reviewer finding into Clear / Ambiguous / Complex / Out-of-PRD-Scope, then acts: fixes the cause and pushes (diff-only) for Clear, posts one in-thread reply for the rest. Skips findings it already handled. Invoked headless by the dispatcher's feedback gate; the dispatcher owns the round counter and the STUCK escalation. Triggers - address-feedback, address review comments, respond to PR review, handle reviewer findings, PR feedback loop (project)
+description: Respond to an automated reviewer's findings on the current feature PR — a narrow, headless responder. Triages each reviewer finding into Clear / Ambiguous / Complex / Out-of-PRD-Scope, then acts — fixes the cause and pushes (diff-only) for Clear, posts one in-thread reply for the rest. Skips findings it already handled. Invoked headless by the dispatcher's feedback gate; the dispatcher owns the round counter and the STUCK escalation. Triggers - address-feedback, address review comments, respond to PR review, handle reviewer findings, PR feedback loop (project)
 ---
 
 # address-feedback
