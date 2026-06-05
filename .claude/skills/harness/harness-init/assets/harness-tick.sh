@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 # harness-tick.sh — one outer-loop tick: sync the HOST worktree to main, then dispatch.
 #
-# This is the target the outer loop (/loop, cron, …) invokes — NOT the dispatcher
+# This is the target the build loop (/loop, cron, …) invokes — NOT the dispatcher
 # directly. It exists to keep the harness's own operating context current.
 #
-# WHY A WRAPPER. The dispatcher, scripts/bootstrap-worktree.sh, .harness/env, the
-# /learn skill, the memory, and the root AGENTS.md all live in the HOST worktree
-# (../<repo>-harness) and are read FROM it as the loop runs. The host worktree sits
-# at a detached HEAD and does NOT auto-advance when main moves, so without a sync
-# step those would freeze at whatever commit the worktree was created on. Feature
-# PIPELINE skills are unaffected — they run inside per-feature worktrees that branch
-# from the PRD branch (off main), so new features pick up skill updates on their own.
-# Only this loop-level infrastructure needs syncing; that's what this wrapper does.
+# WHY A WRAPPER. The dispatcher, scripts/bootstrap-worktree.sh, and .harness/env all
+# live in the HOST worktree (../<repo>-harness) and are read FROM it as the loop runs.
+# The host worktree sits at a detached HEAD and does NOT auto-advance when main moves,
+# so without a sync step those would freeze at whatever commit the worktree was created
+# on. Feature PIPELINE skills are unaffected — they run inside per-feature worktrees
+# that branch from the PRD branch (off main), so new features pick up skill updates on
+# their own. Only this loop-level infrastructure needs syncing; that's what this
+# wrapper does. (The /learn skill + memory used to need this sync too, back when /learn
+# ran in the host worktree; it now runs in its own dedicated worktree under its own
+# loop — scripts/learn-tick.sh — which syncs itself, so the host worktree is purely the
+# build loop's.)
 #
 # WHY HERE AND NOT IN THE DISPATCHER. The dispatcher must stay HEAD-agnostic: if it
 # reset its own checkout mid-run it would overwrite the very file it's executing
@@ -22,28 +25,13 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."   # repo root of the host worktree
 
-# Do NOT sync while a /learn is live in THIS worktree. /learn is the one skill that
-# runs in the host worktree (cwd "."), and it can outlast the tick interval (a
-# from-scratch Expert bootstrap is minutes). The dispatcher records its PID in
-# .harness/learn-running for the duration of the /learn call; force-syncing now would
-# `git checkout -f` / `git clean` the worktree out from under it, wiping its in-flight
-# Expert + learn/<sha> branch so it never reaches its push+PR step. A live PID means
-# skip this tick; a dead PID (crashed dispatcher) is stale — reap it and proceed.
-# This extends the dispatcher's flock discipline (Inv 5) to the per-tick sync.
-if [[ -f .harness/learn-running ]]; then
-  if kill -0 "$(cat .harness/learn-running 2>/dev/null)" 2>/dev/null; then
-    exit 0
-  fi
-  rm -f .harness/learn-running
-fi
-
 git fetch --quiet origin
 
 # Force a clean, current detached checkout of origin/main. `-f --detach` is
-# idempotent and self-healing: it recovers no matter what state a crash or a prior
-# /learn left the worktree in (e.g. left on a learn/<sha> branch). The guard above
-# ensures we never do this to a /learn that is still running. This is the
-# host-worktree analogue of the dispatcher's per-feature wipe.
+# idempotent and self-healing: it recovers no matter what state a crash left the
+# worktree in. This is the host-worktree analogue of the dispatcher's per-feature
+# wipe. The memory loop never touches this worktree's working tree (it works in
+# ../<repo>-harness-learn), so there is nothing here to race.
 git checkout --quiet -f --detach origin/main
 git clean -qfd                            # -d not -x: keep node_modules & .harness/* runtime state
 

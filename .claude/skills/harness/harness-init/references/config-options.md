@@ -65,11 +65,28 @@ feedback loop reaches `FEEDBACK_CAP` and STUCKs instead (a clean PR the human me
 Set it **empty** in `.harness/env` when there is **no reviewer**, so the dispatcher
 converges at PR-open. Must match whatever `REVIEW.md` tells the reviewer to post.
 
-### Loop interval (in the `/loop` invocation, not `.harness/env`)
+### Loop intervals (in the `/loop` invocations, not `.harness/env`)
 
-`/loop 5m /poll-and-dispatch` — the `5m` is the tick cadence. 5 minutes is a
-sane default. Shorter = more responsive, more API ticks (most are cheap
-no-ops); longer = lazier. This is a UX knob, not a correctness one.
+There are **two** loops, each its own `/loop` session in the harness host worktree:
+
+- `/loop 5m /poll-and-dispatch` — the **build loop** (features). `5m` is a sane
+  default. Shorter = more responsive, more API ticks (most are cheap no-ops).
+- `/loop 10m /learn-loop` — the **memory loop** (`/learn`). It can tick lazily: it
+  only acts when `origin/main` has advanced past the `refs/harness/last-learned`
+  watermark AND no `learn/<sha>` PR is already open. Most ticks are cheap no-ops.
+
+Both are UX knobs, not correctness ones — the loops self-serialize (`flock`) and
+re-derive their state every tick, so a missed or slow tick never corrupts anything.
+
+### The memory loop's watermark (`refs/harness/last-learned`)
+
+Not a `.harness/env` value — a git **ref** on the remote, the memory loop's only
+durable state. It records how far into `main`'s history `/learn` has digested.
+`learn-tick.sh` reads it as the `--since` for the next run and advances it (atomic
+`--force-with-lease`) after each run. It lives in its own ref namespace, so it
+survives `learn/<sha>` branch deletion and is shared across nodes — there is **no**
+local `last-main-sha` file anymore. To force a full re-learn, delete the ref
+(`git push origin :refs/harness/last-learned`) or run `/learn --rebuild` by hand.
 
 ### `WORKTREE_BASE` (rarely set)
 
@@ -92,7 +109,6 @@ somewhere else (e.g. a different disk). Leave unset otherwise.
 
 Holds runtime state, all re-derivable, none of it secret:
 - `env` — the config above (committed, or kept local — see below).
-- `last-main-sha` — last-seen `origin/main` for the post-merge `/learn` debounce.
 - `planning-attempts-<f>`, `validate-attempts-<f>`, `implement-attempts-<f>`,
   `local-check-attempts-<f>`, `feedback-rounds-<f>` — per-feature retry counters
   (each gates a STUCK circuit breaker).
@@ -112,7 +128,8 @@ not project artifacts. harness-init adds `.harness/feedback-rounds-*`,
 `.harness/local-check-attempts-*`, `.harness/implement-attempts-*`,
 `.harness/planning-attempts-*`, `.harness/validate-attempts-*`,
 `.harness/stuck-*`, `.harness/human-review-*`, `.harness/sessions-*.tsv`, and
-`.harness/last-main-sha` to `.gitignore`. Whether `.harness/env` is committed is a choice: commit it to
+`.harness/learn-review-body-*` to `.gitignore` (the memory loop's watermark is the
+`refs/harness/last-learned` ref, not a file). Whether `.harness/env` is committed is a choice: commit it to
 share defaults across a team's checkouts; keep it local (gitignored) if each
 dev tunes their own. Recommend committing `env` and ignoring the counters.
 

@@ -57,66 +57,17 @@ CLAUDE_PERM_ARGS=( --permission-mode auto )
 # CLAUDE_PERM_ARGS, ...).
 [[ -f .harness/env ]] && source .harness/env
 
-worktree_for() { echo "${WORKTREE_BASE}-$1"; }
+# Shared helpers (worktree_for, bootstrap_worktree, run_claude,
+# render_sessions_table) live in harness-lib.sh — the memory loop (learn-tick.sh)
+# uses the same ones, so they're factored out to avoid drift. They read the config
+# globals set above (CLAUDE_PERM_ARGS) and below (WORKTREE_BASE); bash resolves
+# those at call time.
+source "$(dirname "${BASH_SOURCE[0]}")/harness-lib.sh"
 
 # Invariant 2: a feature/<f> is harness-owned iff prds/<f>/prd.md is committed
 # to it. Hand-pushed feature/quickfix without a PRD is ignored.
 has_prd() {
   git cat-file -e "origin/feature/${1}:prds/${1}/prd.md" 2>/dev/null
-}
-
-# LOCAL ADDITION (not in the canonical design-doc dispatcher): make a freshly
-# created worktree runnable. A bare worktree has no gitignored files
-# (node_modules, .env, generated code), so signals and the PRD runner would fail
-# for reasons unrelated to the feature. If the project has no bootstrap script,
-# this is a no-op and the dispatcher behaves exactly as the doc specifies.
-bootstrap_worktree() {
-  local wt="$1"
-  if [[ -x scripts/bootstrap-worktree.sh ]]; then
-    ./scripts/bootstrap-worktree.sh "$wt" || \
-      echo "WARN: bootstrap-worktree.sh failed for ${wt}" >&2
-  fi
-}
-
-# Wrap every claude -p call. Generates a session UUID, runs claude headless with
-# --session-id so the trace at ~/.claude/projects/<encoded>/<uuid>.jsonl is
-# locatable later, and appends a row to .harness/sessions-<feature>.tsv. The TSV
-# is the per-feature audit trail the STUCK signal points the human into.
-run_claude() {
-  local step="$1" feature="$2" attempt="$3" wt="$4"; shift 4
-  local sid; sid="$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || echo "noid-$$-$RANDOM")"
-  local log=".harness/sessions-${feature}.tsv"
-  [[ -s "$log" ]] || printf '#timestamp\tstep\tattempt\tsession_id\texit\tduration_s\n' > "$log"
-  local t0; t0="$(date +%s)"
-  # No print-mode --cwd flag exists; `cd` is the only way to set the working
-  # directory, and it's also what gives the skill its .claude/ command + AGENTS.md
-  # / CLAUDE.md discovery inside the worktree. (Inv 3 + 6: the skill operates on
-  # the feature worktree, never the dispatcher's checkout.) `learn` passes "." to
-  # run at the repo root on main.
-  # The `|| exit=$?` keeps a non-zero skill exit from tripping `set -e` so the row
-  # below always gets written (the STUCK dossier needs it), and `return 0` keeps a
-  # failed step from aborting the rest of the tick — the absent sentinel makes the
-  # next tick re-derive and retry. (Inv 1 + 4 + 5)
-  # NOTE: --session-id is the documented headless flag; if your claude version
-  # doesn't support it, swap for --output-format json and parse session_id out.
-  local exit=0
-  ( cd "$wt" && claude -p --session-id "$sid" "${CLAUDE_PERM_ARGS[@]+"${CLAUDE_PERM_ARGS[@]}"}" "$@" ) || exit=$?
-  printf '%s\t%s\t%d\t%s\t%d\t%d\n' \
-    "$(date -Iseconds 2>/dev/null || date)" "$step" "$attempt" "$sid" "$exit" "$(( $(date +%s) - t0 ))" >> "$log"
-  return 0
-}
-
-# Render the per-feature session table (the full claude -p build trail) as a
-# Markdown table on stdout. Shared by signal_stuck and signal_human_review so the
-# session IDs are surfaced on the PR in BOTH the failure (STUCK) and the healthy
-# (HUMAN_REVIEW) terminal states — the substrate a later /evaluate-sessions reads.
-render_sessions_table() {
-  local feature="$1"
-  [[ -f ".harness/sessions-${feature}.tsv" ]] || return 0
-  echo '| Time | Step | Attempt | Session ID | Exit |'
-  echo '|------|------|---------|------------|------|'
-  grep -v '^#' ".harness/sessions-${feature}.tsv" 2>/dev/null | tail -n 20 | \
-    awk -F'\t' '{printf "| %s | `%s` | %s | `%s` | %s |\n", $1, $2, $3, $4, $5}'
 }
 
 # Convergence handoff: the reviewer reported no Important findings, so
@@ -137,33 +88,6 @@ signal_human_review() {
     echo "\`~/.claude/projects/<encoded>/<session-id>.jsonl\` to see what each agent"
     echo "saw and concluded; useful if you decide *not* to merge and want to find"
     echo "which context shaped a decision):"
-    echo
-    render_sessions_table "$feature"
-  } > "$body"
-  gh pr comment "$branch" --body-file "$body" 2>/dev/null || true
-}
-
-# /learn handoff (step 5): post the headless session trail on the learn/<sha> PR
-# so the human evaluating the memory changes can open the trace and see exactly
-# what /learn read and why it routed each fact as it did. Mirrors
-# signal_human_review (reuses render_sessions_table); framed for troubleshooting a
-# memory decision, not a review handoff. $feature is the per-sha session label
-# (learn-<sha>) so the table shows exactly this run; $branch is learn/<sha>.
-signal_learn_review() {
-  local feature="$1" branch="$2"
-  local body=".harness/learn-review-body-${feature}.md"
-  {
-    echo "## /learn session — why memory changed"
-    echo
-    echo "These memory edits (Expert shards, invariants, AGENTS.md pointers,"
-    echo "candidate lints) were written by a headless \`/learn\` over the merged"
-    echo "diff. If a routing call here looks wrong — a fact in the wrong surface,"
-    echo "an overfit lint, an Expert shard that says too much — open the trace"
-    echo "below to see exactly what \`/learn\` read and how it decided, before you"
-    echo "accept or revise it."
-    echo
-    echo "**Session** (open the trace at"
-    echo "\`~/.claude/projects/<encoded>/<session-id>.jsonl\`):"
     echo
     render_sessions_table "$feature"
   } > "$body"
@@ -472,44 +396,12 @@ for feature in $(git for-each-ref --format='%(refname:lstrip=4)' \
   fi
 done
 
-# 5. Post-merge memory update via /learn. Ground truth only — main is the single
-#    source from which memory is written. /learn reads the merged diff (including
-#    any context corrections the human committed while resolving a STUCK) and
-#    routes facts to: Expert shards, invariants, AGENTS.md pointers, or drafted
-#    lints. ls-remote makes it idempotent across nodes: first to push learn/<sha>
-#    wins; others exit. (Inv 7)
-#    /learn runs with cwd "." (the HOST worktree). harness-tick.sh force-syncs that
-#    worktree to a clean origin/main at the START of each tick, so "." is a fresh
-#    checkout of main — no dedicated /learn worktree needed. Because /learn can run
-#    longer than the tick interval, we mark .harness/learn-running around it so the
-#    NEXT tick's sync skips rather than wiping a still-running /learn.
-LAST="$(cat .harness/last-main-sha 2>/dev/null || echo HEAD~50)"
-CUR="$(git rev-parse origin/main)"
-if [[ "${CUR}" != "${LAST}" ]] \
-   && ! git ls-remote --exit-code origin "learn/${CUR}" >/dev/null 2>&1; then
-  # /learn operates in THIS host worktree (cwd "."). Record our PID so the next
-  # tick's harness-tick.sh sync refuses to reset the worktree out from under a
-  # still-running /learn (a crashed dispatcher leaves a dead PID the next tick
-  # reaps). Without this guard the per-tick force-sync races /learn and wipes its
-  # in-flight Expert + learn/<sha> branch. (Inv 5)
-  echo $$ > .harness/learn-running
-  # Per-sha session label so this run gets its own .harness/sessions-learn-<sha>.tsv
-  # and render_sessions_table surfaces exactly this /learn run on its PR (not the
-  # accumulated trail of every past run, as a shared _main label would).
-  run_claude learn "learn-${CUR}" 1 "." "/learn --since ${LAST} --sha ${CUR}"
-  rm -f .harness/learn-running
-  # Surface this run's session on the learn PR so the human evaluating the memory
-  # changes can open the trace and troubleshoot why /learn routed as it did. Only
-  # if /learn actually opened the PR (it may find nothing to learn, or fail first).
-  if gh pr view "learn/${CUR}" >/dev/null 2>&1; then
-    signal_learn_review "learn-${CUR}" "learn/${CUR}"
-  fi
-  # One-shot cleanup: the session id now lives in the PR comment (what the human
-  # reads), and the ls-remote guard above prevents a re-run, so these are safe to
-  # drop — and step-4 cleanup only sweeps feature/*, never learn branches. (Inv 7)
-  rm -f ".harness/sessions-learn-${CUR}.tsv" ".harness/learn-review-body-learn-${CUR}.md"
-fi
-echo "${CUR}" > .harness/last-main-sha
+# Post-merge memory update is NOT here. /learn runs in its own loop
+# (scripts/learn-tick.sh, driven by a separate `/loop … /learn-loop`), in its own
+# dedicated worktree, so a multi-minute memory rebuild never blocks — and is never
+# blocked by — this feature/build loop. The two loops coordinate only through git
+# (the refs/harness/last-learned watermark + ls-remote idempotency on learn/<sha>).
+# See references/dispatcher-explained.md ("The memory loop").
 
 # STUCK escalation is handled inline in step 3 by signal_stuck (which opens or
 # comments on the PR with the session log + checklist). The human takes over

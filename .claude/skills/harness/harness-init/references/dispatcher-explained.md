@@ -57,9 +57,10 @@ Explain these as the "why it's safe" of the script. Each maps to an invariant.
 | step 2 | lazy claim up to capacity | No — atomic rename is the claim lock. |
 | step 3 | advance each feature one step | **This is where you add/remove pipeline steps** — one `elif` per step. |
 | step 4 | cleanup merged/closed PRs | Safe to extend (e.g., notify on cleanup). |
-| step 5 | post-merge `/learn` (memory update, ground truth only) | Debounce/idempotency live here. |
+| post-merge `/learn` | **NOT in this script** — runs in the separate memory loop (`learn-tick.sh`). See "The memory loop" below. | Watermark/idempotency live there. |
 | step 3 (review) | the feedback gate has three branches: `reviewer_converged` (marker present) → write `human-review-<f>`; else findings → `/address-feedback`; else cap → STUCK | Convergence is the marker; the gate order matters (converge before the findings loop). |
-| helpers | `run_claude` (session-tagged invocation + TSV log), `signal_stuck` (PR-body STUCK signal), `render_sessions_table` (shared trail renderer), `signal_human_review` (the convergence handoff comment), `signal_learn_review` (the learn-PR session comment), `reviewer_converged` (marker check) | Used by §3 steps that call `claude -p`, hit a cap, or detect convergence; `signal_learn_review` by §5. |
+| helpers (shared) | `run_claude` (session-tagged invocation + TSV log), `render_sessions_table` (shared trail renderer) live in `harness-lib.sh` — both loops use them. | Edit `run_claude` in one place (e.g. the `--session-id` swap). |
+| helpers (dispatcher) | `signal_stuck` (PR-body STUCK signal), `signal_human_review` (the convergence handoff comment), `reviewer_converged` (marker check), `has_prd` (ownership filter) | Used by §3 steps that call `claude -p`, hit a cap, or detect convergence. |
 
 ## The bootstrap hook — project-owned worktree provisioning
 
@@ -107,19 +108,17 @@ symptoms. Notes:
 
 The dispatcher is **HEAD-agnostic**: it operates on git *refs* (`origin/feature/*`,
 `feature/*`) and per-feature worktrees, never on its own checkout's HEAD. But the
-files it executes — the dispatcher itself, `bootstrap-worktree.sh`, `.harness/env`,
-and (for step 5) the `/learn` skill + memory + root `AGENTS.md` — are read from the
-**host worktree**, which sits at a detached HEAD and does not auto-advance when
-`main` moves. Without a sync step, loop infrastructure freezes at the commit the
-host worktree was created on.
+files it executes — the dispatcher itself, `harness-lib.sh`, `bootstrap-worktree.sh`,
+`.harness/env` — are read from the **host worktree**, which sits at a detached HEAD
+and does not auto-advance when `main` moves. Without a sync step, loop infrastructure
+freezes at the commit the host worktree was created on.
 
-So the outer loop targets **`scripts/harness-tick.sh`**, not the dispatcher
+So the build loop targets **`scripts/harness-tick.sh`**, not the dispatcher
 directly. The wrapper:
 
 1. `git fetch origin`
 2. `git checkout -f --detach origin/main` + `git clean -fd` — force the host worktree
-   to a clean, current `main` (idempotent; self-heals whatever state a crash or a
-   prior `/learn` left it in)
+   to a clean, current `main` (idempotent; self-heals whatever state a crash left it in)
 3. `exec ./scripts/poll-and-dispatch.sh`
 
 The sync lives in the wrapper, **before** `exec`, for a reason: if the dispatcher
@@ -131,25 +130,51 @@ it changes on main, that change takes effect the next tick.
 Note the asymmetry: feature **pipeline** skills (`/spec-planning`, `/implement-*`,
 `/address-feedback`, …) do **not** need this sync — they run inside per-feature
 worktrees that branch from the PRD branch (off main), so new features pick up skill
-updates on their own. Only loop-level infra and `/learn`-time context ride the host
-worktree, and that's exactly what the wrapper refreshes. The `/learn` step keeping
-cwd `"."` (the host worktree) is therefore safe — the wrapper guarantees `"."` is a
-clean checkout of main each tick, so no dedicated `/learn` worktree is needed.
+updates on their own. Only loop-level infra rides the host worktree, and that's
+exactly what the wrapper refreshes.
 
-**One subtlety the sync must respect: never reset the worktree out from under a
-running `/learn`.** `/learn` is the only skill that runs *in* the host worktree, and
-it can take longer than the tick interval (a from-scratch Expert bootstrap is
-minutes). If the next tick's force-sync fires mid-`/learn`, its `git checkout -f` +
-`git clean` wipe `/learn`'s in-flight Expert and `learn/<sha>` branch — so `/learn`
-never reaches its push+PR step, and because the tick never completes, `last-main-sha`
-never advances and the dispatcher re-triggers `/learn` from scratch every tick (an
-infinite build → wipe → rebuild, with no PR). The fix: the dispatcher writes its PID
-to `.harness/learn-running` for the duration of the `/learn` call, and
-`harness-tick.sh` checks that marker **before** syncing — a live PID means exit the
-tick untouched; a stale PID (crashed run) is reaped and the tick proceeds. This
-extends the dispatcher's `flock` serialization (Inv 5) to the one piece of per-tick
-work that lives in the wrapper, outside the lock. (Surfaced in dogfooding; see the
-big spec's "`/learn` in the host worktree" entry.)
+## The memory loop — `/learn` as its own loop (`learn-tick.sh`)
+
+`/learn` is **not** a dispatcher step. It runs in a second, independent loop:
+`/loop … /learn-loop` → `scripts/learn-tick.sh`. This is the deliberate decoupling
+that keeps a multi-minute Expert bootstrap from blocking (or being blocked by) the
+build loop. The two loops share a node but never wait on each other — separate
+`flock`s on separate scripts — and coordinate only through git (Inv 1 + 7).
+
+What `learn-tick.sh` does each tick (it is the memory-loop analogue of
+`harness-tick.sh` + the old dispatcher step 5):
+
+1. `flock -n` on itself (self-serialize — a long bootstrap just no-ops later ticks).
+2. `git fetch` `main` **and** the watermark ref namespace
+   (`+refs/harness/*:refs/harness/*`). Fetch only — never the host *working tree*.
+3. Ensure the dedicated, **reused** `../<repo>-harness-learn` worktree exists (create
+   + `bootstrap_worktree` on first run — so a drafted lint and `check-agents-md.sh`
+   can actually run), then reset it to clean `origin/main` (`-fd`, keeping deps).
+4. **Pause** if a `learn/<sha>` PR is already open (`gh pr list … startswith("learn/")`):
+   memory edits serialize behind human review. Nothing is queued — the backlog is
+   implicit in `(watermark, origin/main)` and recomputed every tick.
+5. Compute `since = refs/harness/last-learned` (or a bounded look-back on the first
+   run), `to = origin/main`; if equal, no-op.
+6. `git ls-remote origin learn/<to>` idempotency (cross-node first-to-push-wins).
+7. Check out `learn/<to>` in the learn worktree and run `/learn --since <since>
+   --sha <to>` there. `/learn` writes memory, pushes the branch, opens the PR.
+8. `signal_learn_review` posts the session trail on the PR (if one opened).
+9. Advance `refs/harness/last-learned` to `<to>` with an atomic CAS
+   (`--force-with-lease`) — the same first-to-push-wins primitive used to claim PRDs.
+
+**Why a ref watermark, not the old `.harness/last-main-sha` file.** A ref lives in
+its own namespace nothing cleans, so it survives `learn/<sha>` branch deletion; it's
+on the remote, so it's shared across nodes; and `--force-with-lease` gives a
+lock-free compare-and-swap. The file was per-node local state with none of those
+properties. The advance happens whether or not `/learn` opened a PR (a 0/3 no-op
+merge is still "learned"), matching the old step-5 semantics — only now the anchor is
+durable and shared.
+
+**Why this never races the build loop.** `learn-tick.sh` does all working-tree ops
+(`checkout`/`reset`/`clean`) in the `-harness-learn` worktree, never the host
+worktree — so the build loop's per-tick host force-sync has nothing of the memory
+loop's to wipe. That is what let us delete the old `.harness/learn-running` PID guard
+entirely: there is no longer a skill running *in* the host worktree to protect.
 
 ## Human-steering points: Evaluate (HUMAN_REVIEW) and STUCK
 
@@ -162,8 +187,8 @@ posts the build-session trail once and halts the feature. The human runs
 `/evaluate-pr` to walk the change, run it, and merge (or fix-and-push, or close).
 The loop does not re-engage — the human is the last mile.
 
-**STUCK (the failure one).** Memory still has **one write path** — `/learn` at step 5,
-post-merge, ground truth only. There is no separate write path for failed features.
+**STUCK (the failure one).** Memory still has **one write path** — `/learn` in the
+memory loop, post-merge, ground truth only. There is no separate write path for failed features.
 Instead, **STUCK** (a step in §3 hitting its cap) is a first-class escalation: the
 dispatcher posts
 to the PR (opening it as a draft if needed) with the session log, the failing
@@ -179,12 +204,15 @@ merge carries it home.
 
 ## The session log + STUCK signal
 
-A few small helpers, all above step 1, do the legwork:
+A few small helpers do the legwork. `run_claude` and `render_sessions_table` are
+**shared** — they live in `harness-lib.sh`, sourced by both the dispatcher and
+`learn-tick.sh`; the rest are dispatcher-local, defined above step 1:
 
-- **`run_claude <step> <feature> <attempt#> <wt> "<skill cmd>"`** — wraps every
+- **`run_claude <step> <feature> <attempt#> <wt> "<skill cmd>"`** (shared) — wraps every
   `claude -p` call. `cd`s into the worktree `<wt>` first (there is no print-mode
   `--cwd` flag, and the `cd` is what gives the skill its `.claude/` command +
-  `AGENTS.md` discovery; `learn` passes `.` to run at the repo root on `main`).
+  `AGENTS.md` discovery; the build loop passes the per-feature worktree, the memory
+  loop passes the `<repo>-harness-learn` worktree).
   Generates a UUID session id, runs `claude -p --session-id "${CLAUDE_PERM_ARGS[@]}"`,
   and appends `<timestamp>\t<step>\t<attempt>\t<session_id>\t<exit>\t<duration>`
   to `.harness/sessions-<feature>.tsv` (gitignored, cleared on merge/close). A
@@ -199,12 +227,12 @@ A few small helpers, all above step 1, do the legwork:
 - **`signal_human_review <feature>`** — the convergence counterpart of
   `signal_stuck`: posts the "Ready for your review" comment with the session trail
   (via the shared `render_sessions_table`) so the human can `/evaluate-pr`.
-- **`signal_learn_review <feature> <branch>`** — the step-5 counterpart: after
-  `/learn` opens its `learn/<sha>` PR, posts the headless session trail (same
-  `render_sessions_table`) framed for troubleshooting *why* `/learn` routed each
-  fact as it did, so the human evaluating the memory PR can open the trace before
-  accepting or revising it. Uses a per-sha session label (`learn-<sha>`) so the
-  table shows exactly that run.
+- **`signal_learn_review <feature> <branch>`** — lives in **`learn-tick.sh`**, not the
+  dispatcher: after `/learn` opens its `learn/<sha>` PR, posts the headless session
+  trail (via the shared `render_sessions_table`) framed for troubleshooting *why*
+  `/learn` routed each fact as it did, so the human evaluating the memory PR can open
+  the trace before accepting or revising it. Uses a per-sha session label
+  (`learn-<sha>`) so the table shows exactly that run.
 
 If your `claude -p` version doesn't support `--session-id`, swap that flag for
 `--output-format json` and parse `session_id` from stdout — `run_claude` is the
@@ -218,8 +246,10 @@ one place to change.
 - **STUCK caps** (all built in): `PLANNING_CAP`, `VALIDATE_CAP`, `IMPLEMENT_CAP`,
   `LOCAL_CHECKS_CAP`, `FEEDBACK_CAP`. All env-overridable in `.harness/env`.
   Raise for hard features, lower to fail fast.
-- **Debounce window** for `/learn`: currently fires whenever `origin/main` sha
-  changed. A team merging many times per minute may want a time-debounce.
+- **Memory-loop cadence** for `/learn`: it lives in `learn-tick.sh`, not here. It
+  fires whenever `origin/main` advanced past the `refs/harness/last-learned` watermark
+  and no `learn/<sha>` PR is open. A team merging many times per minute can simply run
+  `/loop` at a longer interval — each run batches every merge since the watermark.
 
 ## What NOT to let the user do
 
@@ -232,6 +262,9 @@ one place to change.
   (loop-infra updates merged to main would never reach the running loop).
 - Move the host-worktree sync *into* the dispatcher (it would overwrite its own
   running file; the sync belongs in the wrapper, before `exec`).
-- Remove the `.harness/learn-running` guard from `harness-tick.sh` (the per-tick
-  force-sync would then race a still-running `/learn` and wipe its work mid-run —
-  `/learn` builds the Expert, the next tick deletes it, repeat, no PR ever lands).
+- Point the memory loop's `/loop` at `poll-and-dispatch.sh`, or fold `/learn` back
+  into the dispatcher as a step — that re-couples the loops, so a multi-minute Expert
+  bootstrap again blocks every feature step (the whole reason it's a separate loop).
+- Make `learn-tick.sh` do working-tree ops (`checkout`/`reset`/`clean`) in the **host**
+  worktree instead of `<repo>-harness-learn` — it would then race the build loop's
+  per-tick host force-sync. The memory loop must stay in its own worktree.

@@ -12,8 +12,12 @@ updates the **Expert** (procedural + semantic memory, pulled on demand) and the
 project invariants, and drafts candidate **lints** (the highest-value memory,
 because a lint is a rule the agent cannot ship past).
 
-You run **headless**, invoked by the dispatcher as the post-merge step. Your
-output is a single reviewable PR — never an auto-merge. Humans steer at merge.
+You run **headless**, invoked by the **memory loop** (`scripts/learn-tick.sh`, driven
+by its own `/loop … /learn-loop`) as the post-merge step — in a dedicated
+`../<repo>-harness-learn` worktree on a `learn/<sha>` branch off `origin/main`, never
+in the build loop's host worktree. The memory loop runs independently of the
+feature/build loop, so a from-scratch Expert bootstrap blocks neither. Your output is
+a single reviewable PR — never an auto-merge. Humans steer at merge.
 
 ## Ground truth is the whole point (read this first)
 
@@ -85,7 +89,7 @@ Determine mode:
 - **Incremental** — the Expert exists: reconcile against the merged diff.
 
 Idempotency: if `learn/<sha>` already exists on origin, another node handled this
-merge — exit cleanly. (The dispatcher pre-checks this too.)
+merge — exit cleanly. (The memory loop pre-checks this too, via `git ls-remote`.)
 
 ### Step 1 — Gather
 Read: the diff for `--since <sha>..--sha <sha>`; the current Expert shards
@@ -130,17 +134,22 @@ Append a `changelog.md` entry citing the merge sha and listing every surface
 touched and the consensus vote. Open the `learn/<sha>` PR. Done.
 
 ## Invocation & output contract
-- **Invoked by:** the dispatcher, `claude -p "/learn --since <sha> --sha <sha>"`.
-  Also runnable by a human with `--rebuild` (regenerate memory from main).
+- **Invoked by:** the memory loop, `claude -p "/learn --since <sha> --sha <sha>"`,
+  inside the `../<repo>-harness-learn` worktree. The `--since` is the
+  `refs/harness/last-learned` watermark (how far memory has already been digested);
+  `--sha` is current `origin/main`. Also runnable by a human with `--rebuild`
+  (regenerate memory from main).
 - **Writes:** under `.claude/skills/expert/` (shards incl. `invariants.md` and
   `changelog.md`), `scripts/lints/*` + `scripts/local-checks.sh` wiring, and
   `AGENTS.md` files across the repo.
 - **Completion signal:** the pushed `learn/<sha>` branch + open PR. Idempotent via
-  `git ls-remote origin learn/<sha>`.
-- **Session trail:** after the PR opens, the dispatcher (`signal_learn_review`)
+  `git ls-remote origin learn/<sha>`. After the PR opens, the memory loop advances
+  `refs/harness/last-learned` to `<sha>` (atomic CAS) and pauses new runs until you
+  merge or close the PR.
+- **Session trail:** after the PR opens, the memory loop (`signal_learn_review`)
   attaches this run's headless `claude -p` session as a PR comment, so the human
   evaluating the memory changes can open the trace and troubleshoot *why* `/learn`
-  routed a fact as it did. No action needed in this skill — the dispatcher posts it.
+  routed a fact as it did. No action needed in this skill — the loop posts it.
 
 ## Hard nevers
 - **Never write memory for uncommitted or planned work** (P1). Diff against main only.

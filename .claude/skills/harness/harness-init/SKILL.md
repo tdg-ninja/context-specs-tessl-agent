@@ -80,40 +80,53 @@ the chosen values. Add the runtime counter files to `.gitignore`:
 .harness/stuck-*
 .harness/human-review-*
 .harness/sessions-*.tsv
-.harness/last-main-sha
+.harness/learn-review-body-*
 ```
+
+(The memory loop keeps no local watermark file — the `refs/harness/last-learned`
+ref on the remote is the watermark — so there is no `last-main-sha` to ignore.)
 
 (Commit `.harness/env` itself; ignore only the counters.)
 
-### Step 2 — The dispatcher + the tick wrapper
+### Step 2 — The dispatcher, the shared lib, and the two tick wrappers
 
-Read `references/dispatcher-explained.md`. Copy **both** `assets/poll-and-dispatch.sh`
-→ `scripts/poll-and-dispatch.sh` and `assets/harness-tick.sh` → `scripts/harness-tick.sh`,
-`chmod +x` both. Then **walk the user through them** — the load-bearing
-properties of the dispatcher (including the HUMAN_REVIEW convergence exit — the
-reviewer's `REVIEW_CLEAN_MARKER` comment hands the PR to the human for
-`/evaluate-pr`), the section map, the **bootstrap hook** (the
-project-owned worktree provisioning; explain why it's there), and the
-**`harness-tick.sh` wrapper**: the outer loop targets the wrapper, which
+Read `references/dispatcher-explained.md`. Copy these from `assets/` into `scripts/`
+and `chmod +x` the shell scripts:
+
+- `poll-and-dispatch.sh` — the build-loop dispatcher (features).
+- `harness-tick.sh` — the build-loop wrapper.
+- `harness-lib.sh` — shared helpers (`run_claude`, `render_sessions_table`,
+  `worktree_for`, `bootstrap_worktree`), sourced by both loops. **No `chmod +x`** —
+  it's sourced, never executed.
+- `learn-tick.sh` — the **memory-loop** wrapper (the post-merge `/learn` driver).
+
+Then **walk the user through them** — the load-bearing properties of the dispatcher
+(including the HUMAN_REVIEW convergence exit — the reviewer's `REVIEW_CLEAN_MARKER`
+comment hands the PR to the human for `/evaluate-pr`), the section map, the
+**bootstrap hook** (the project-owned worktree provisioning; explain why it's there),
+and the **`harness-tick.sh` wrapper**: the build loop targets the wrapper, which
 force-syncs the host worktree to a clean `origin/main` and *then* `exec`s the
-(HEAD-agnostic) dispatcher — but **skips the sync while a `/learn` is live** (it
-checks the dispatcher's `.harness/learn-running` PID marker), so the per-tick
-force-sync never resets the worktree out from under the one skill that runs in
-it (`/learn`, cwd `"."`). Explain why the sync lives in the wrapper, not the
+(HEAD-agnostic) dispatcher. Explain why the sync lives in the wrapper, not the
 dispatcher: the dispatcher must never reset its own running file, and this is how
-loop-infrastructure updates merged to main (dispatcher, `.harness/env`, the
-`/learn` skill, memory, `AGENTS.md`) reach the loop — feature *pipeline* skills
-ride the PRD branch and need no sync. Offer the common tweaks (PRD-runner stuck
-cap, feedback round cap, extra pipeline steps). Do not let them break the "what
-NOT to do" list.
+loop-infrastructure updates merged to main (dispatcher, `.harness/env`) reach the
+loop — feature *pipeline* skills ride the PRD branch and need no sync.
 
-### Step 3 — The shim skill
+Then explain **the memory loop is a separate loop** (`references/dispatcher-explained.md`
+→ "The memory loop"): `/learn` is NOT a dispatcher step. `learn-tick.sh` runs it under
+its own `/loop … /learn-loop`, in its own dedicated `../<repo>-harness-learn` worktree,
+gated by the `refs/harness/last-learned` watermark ref and paused while a `learn/<sha>`
+PR is open. The two loops never block each other and coordinate only through git. Offer
+the common tweaks (PRD-runner stuck cap, feedback round cap, extra pipeline steps, the
+memory-loop interval). Do not let them break the "what NOT to do" list.
 
-Copy `assets/poll-and-dispatch-SKILL.md` to
-`.claude/skills/poll-and-dispatch/SKILL.md`. Explain the `/loop` gotcha: the
-outer session must never do real work — this shim only calls
-`scripts/harness-tick.sh` (which syncs, then dispatches), and all real work
-happens in fresh `claude -p` subprocesses. One paragraph; then move on.
+### Step 3 — The shim skills
+
+Copy **both** shims: `assets/poll-and-dispatch-SKILL.md` →
+`.claude/skills/poll-and-dispatch/SKILL.md` and `assets/learn-loop-SKILL.md` →
+`.claude/skills/learn-loop/SKILL.md`. Explain the `/loop` gotcha: an outer session must
+never do real work — each shim only calls its tick script (`harness-tick.sh` /
+`learn-tick.sh`), and all real work happens in fresh `claude -p` subprocesses. One
+paragraph; then move on.
 
 ### Step 4 — `AGENTS.md` (Software 3.0)
 
@@ -231,25 +244,38 @@ runnable afterward, the script works. Fix and re-run if not.
 From the **harness host worktree** (`../<repo>-harness`), run
 `./scripts/harness-tick.sh` once. It force-syncs the worktree to `origin/main`
 and then runs the dispatcher; with no PRDs filed it should be a clean no-op
-(fetch, sync, find nothing, exit 0). This proves the whole wiring — sync wrapper
-+ dispatcher — without doing any work. Walk through its output with the user. If
-anything errors, debug before starting the loop. (Note: with no `origin` yet, the
-fetch fails fast — that's expected until the remote exists.)
+(fetch, sync, find nothing, exit 0). This proves the build-loop wiring — sync
+wrapper + dispatcher — without doing any work.
+
+Then run `./scripts/learn-tick.sh` once. On a fresh repo (Expert not yet built, no
+merges since the watermark) it creates and bootstraps the `../<repo>-harness-learn`
+worktree, finds no new range, and exits — proving the memory-loop wiring. Walk
+through both outputs with the user. If anything errors, debug before starting the
+loops. (Note: with no `origin` yet, the fetch fails fast — that's expected until the
+remote exists.)
 
 ### Step 10 — Commit, then start the loop
 
 Commit the setup artifacts on `main` (or on a setup branch for the user to merge
-— ask). Then explain how to start the harness, in a Claude Code session pinned to
-the harness worktree:
+— ask). Then explain how to start the harness. It runs as **two independent loops**,
+each in its own long-lived Claude Code session pinned to the harness worktree — the
+build loop (features) and the memory loop (`/learn`). They never block each other:
 
 ```
 cd ../<repo>-harness
+
+# session 1 — the build loop (features):
 claude
-# then, in the session:
 /loop 5m /poll-and-dispatch
+
+# session 2 — the memory loop (/learn), in a SEPARATE session:
+claude
+/loop 10m /learn-loop
 ```
 
-Offer to start it if they're ready. Finish with the **daily flow** recap:
+The memory loop can tick lazily (10m is fine) — it only acts when main has advanced
+past the `refs/harness/last-learned` watermark and no learn PR is already open. Offer
+to start them if they're ready. Finish with the **daily flow** recap:
 1. `/intent` in their normal checkout → confirm a PRD → walk away.
 2. Harness picks it up, runs the chain, opens a PR.
 3. Either:
@@ -270,10 +296,11 @@ Offer to start it if they're ready. Finish with the **daily flow** recap:
 ## Inner skill dependency
 
 The dispatcher calls `/spec-planning`, `/spec-validate`, `/implement-mainspec`,
-`/fix-local-checks`, `/address-feedback`, and `/learn`. Two more are
-**human-invoked**, not dispatched: `/intent` (front of the chain) and `/evaluate-pr`
-(the Evaluate phase — run after the harness posts its "Ready for your review"
-handoff). harness-init wires the **outer** harness; it does not author these. Preflight
+`/fix-local-checks`, and `/address-feedback`. `/learn` is driven by the **separate
+memory loop** (`learn-tick.sh`), not the dispatcher. Two more are **human-invoked**,
+not dispatched: `/intent` (front of the chain) and `/evaluate-pr` (the Evaluate phase
+— run after the harness posts its "Ready for your review" handoff). harness-init wires
+both **outer** loops; it does not author these. Preflight
 reports which are installed. If some are missing, set up the harness anyway and
 tell the user clearly which skills must be installed from the catalog before the
 chain runs end to end — the harness will dispatch to them the moment they exist.

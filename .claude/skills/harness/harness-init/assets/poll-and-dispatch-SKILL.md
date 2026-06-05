@@ -13,7 +13,11 @@ session; the scripts shell out to fresh `claude -p` subprocesses for all real
 work, which is what keeps this outer session's context from bloating across ticks.
 
 `harness-tick.sh` first force-syncs this host worktree to a clean `origin/main`
-(so the dispatcher, `.harness/env`, the `/learn` skill, memory, and `AGENTS.md`
-are always current), then `exec`s `./scripts/poll-and-dispatch.sh` — the
-deterministic, HEAD-agnostic dispatcher. Never point `/loop` at the dispatcher
-directly, or loop-infrastructure updates merged to main won't reach the loop.
+(so the dispatcher, its shared `harness-lib.sh`, and `.harness/env` are always
+current), then `exec`s `./scripts/poll-and-dispatch.sh` — the deterministic,
+HEAD-agnostic dispatcher. Never point `/loop` at the dispatcher directly, or
+loop-infrastructure updates merged to main won't reach the loop.
+
+This is the **build loop** (features). The post-merge memory update (`/learn`) runs
+in a separate loop — `/loop … /learn-loop` (`scripts/learn-tick.sh`) — so the two
+never block each other. Start it in its own session alongside this one.

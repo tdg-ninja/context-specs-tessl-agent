@@ -31,16 +31,26 @@ You can swap any layer without touching the others. harness-init sets up the
 outer loop, the tick wrapper, and the dispatcher; the inner skills come from the
 catalog.
 
+This stack is the **build loop** (features). There is a second, independent loop
+with the same shape — the **memory loop**: `/loop … /learn-loop` →
+`scripts/learn-tick.sh` → one `claude -p "/learn …"` in the dedicated
+`<repo>-harness-learn` worktree. It runs post-merge memory updates without ever
+blocking (or being blocked by) the build loop; the two coordinate only through git
+(the `refs/harness/last-learned` watermark ref). Same three-layer discipline, its own
+`/loop` session.
+
 ## Three checkouts (the worktree topology)
 
 ```
 <repo>/                       the human's checkout. On `main`. Never touched by the harness. (Inv 6)
-<repo>-harness/               the harness HOST worktree. Detached at origin/main; runs the loop
-                              + /learn. harness-tick.sh re-syncs it to main every tick. Does NOT
-                              move between feature branches.
+<repo>-harness/               the harness HOST worktree. Detached at origin/main; runs BOTH loops'
+                              outer sessions. harness-tick.sh re-syncs it to main every tick. Does
+                              NOT move between feature branches.
 <repo>-harness-<feature>/     EPHEMERAL per-feature worktree. One per in-flight feature; the
                               dispatcher creates it (off feature/<feature>) and tears it down on
                               merge/close. (Inv 3: worktree ↔ branch 1:1.)
+<repo>-harness-learn/         the memory loop's dedicated worktree. Persistent + reused; learn-tick.sh
+                              resets it to a clean learn/<sha> off main each run. Where /learn runs.
 ```
 
 Two reasons the host is **detached**, not on a `main` branch: git refuses to check
@@ -69,7 +79,7 @@ which worktree the dispatcher runs from.
 | `.validated`           | validated          | `/implement-mainspec` until runner == 0 |
 | runner exits 0         | implemented        | open PR against `main`                  |
 | PR has findings        | in review          | `/address-feedback` (bounded)           |
-| PR merged              | done               | cleanup worktree; `/learn`              |
+| PR merged              | done               | cleanup worktree (the memory loop runs `/learn` separately) |
 
 "Done" is one thing only: `./prds/<f>/run-prd-test.sh` exits 0. The harness
 contracts on that exit code and nothing else.
@@ -93,7 +103,8 @@ input the system is built around.
 
 ## What harness-init is actually standing up
 
-The outer loop (a `/loop` session), the dispatcher script, its config, the
+Both outer loops (two `/loop` sessions — build + memory), the dispatcher and
+`learn-tick.sh` scripts plus their shared `harness-lib.sh`, the config, the
 agent contract (`AGENTS.md`), and the provisioning that makes per-feature
 worktrees runnable. The inner skills (`/intent`, `/spec-planning`, etc.) are
 installed from the catalog; harness-init wires them, it does not author them.
