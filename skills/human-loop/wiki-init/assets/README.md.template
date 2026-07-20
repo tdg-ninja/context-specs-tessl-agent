@@ -1,0 +1,75 @@
+# {{DOMAIN_NAME}} Wiki
+
+Private second-brain on **{{DOMAIN_NAME}}**{{DOMAIN_ONE_LINER}}. Built on **Karpathy's
+"LLM Wiki"** idea — synthesis happens once at ingest time, into a persistent, compounding
+graph of cross-linked, cited markdown pages (not RAG-at-query-time). It is a knowledge
+artifact **for the human**, used to understand the problem space before building.
+
+This wiki is its own git repository and lives **outside** any app codebase.
+
+## How it works
+
+Drop raw material in → run `/ingest` → Claude Code synthesizes wiki pages with
+cross-links and citations. Ask questions with `/query`. Periodically run `/lint` to keep
+the graph clean.
+
+## Layout
+
+- `raw/` — immutable source material (articles, references, transcripts, podcast notes,
+  tweets, gists, repo notes). **Never edited by hand or by the LLM.**
+- `wiki/` — LLM-generated synthesis: concepts, entities, workflows, source summaries,
+  indexes. Browse from [`wiki/MOC.md`](wiki/MOC.md).
+- `_meta/` — ingest log + lint reports.
+- `.claude/commands/` — slash command definitions.
+- `CLAUDE.md` — full conventions (read this if you're hacking on the wiki structure itself).
+
+## Adding new material
+
+**Local file** — drop it into the right `raw/` subfolder, then:
+
+```
+/ingest raw/articles/some-source.md
+```
+
+**URL** — skip the manual save:
+
+```
+/ingest https://example.com/some-article
+```
+
+`/ingest` proposes a plan first (N new pages, M updates, K cross-links). Approve, or pass
+`--yolo` to skip approval.
+
+## Asking questions
+
+```
+/query "what are the core trade-offs in <topic>?"
+```
+
+Answers cite `[[wiki-slug]]` for every claim. If a claim can't be cited, the answer says
+so and names a source to ingest. If the answer synthesizes across multiple pages,
+`/query` offers to promote it to `wiki/inbox/` as a draft page — confirm in a follow-up
+turn to save it.
+
+## Maintenance
+
+```
+/lint            # report only
+/lint --fix      # apply safe fixes (broken-link renames, frontmatter normalization, trivial backlinks)
+```
+
+Reports land in `_meta/lint-reports/<timestamp>.md`. Contradictions and suggested new
+pages are surfaced as suggestions, never auto-applied.
+
+## Open in Obsidian (optional)
+
+Point Obsidian at this folder ("Open folder as vault"). Recommended core plugins:
+Backlinks, Outgoing Links, Graph View, Tags View, Properties, Search. Suggested settings:
+new-note location → `wiki/inbox/`; new link format → "Shortest path when possible"; Use
+Wikilinks → on.
+
+## Credit
+
+The pattern is Andrej Karpathy's "LLM Wiki." This vault ships a hardened implementation
+of it (citation discipline, plan-before-write, layered `raw/ → wiki/ → _meta/`, query
+reads synthesis only).

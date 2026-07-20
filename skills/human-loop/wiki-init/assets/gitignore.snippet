@@ -1,0 +1,14 @@
+# Wiki vault .gitignore
+# The wiki itself (raw/, wiki/, _meta/, CLAUDE.md, commands) is all tracked —
+# it IS the artifact. Ignore only editor/OS cruft and Obsidian's local workspace state.
+
+# Obsidian workspace/local state (keep app config out of git; it's per-machine)
+.obsidian/workspace*
+.obsidian/cache
+.obsidian/*.json.bak
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*~
+.*.swp

@@ -1,0 +1,34 @@
+---
+type: index
+title: "Map of Content"
+created: {{TODAY}}
+updated: {{TODAY}}
+status: draft
+tags: [moc]
+sources: []
+aliases: ["home", "index"]
+---
+
+# Map of Content
+
+Vault entry point for the **{{DOMAIN_NAME}}** wiki — an LLM-maintained knowledge base
+on {{DOMAIN_NAME}}{{DOMAIN_ONE_LINER}}. `/ingest` and `/lint` keep this page current.
+
+This map is **curated, not exhaustive** — it lists canonical entry points per area, not
+every page. It's empty to start; your first few `/ingest` runs will populate it.
+
+## Concepts
+
+<!-- /ingest adds canonical concept pages here, grouped by sub-area as the wiki grows -->
+
+## Entities
+
+<!-- orgs, roles, regulations, tools, vendors, products, protocols -->
+
+## Workflows
+
+<!-- practices and procedures with steps -->
+
+## Sources
+
+<!-- notable source-summaries; the full list lives under wiki/sources/ -->

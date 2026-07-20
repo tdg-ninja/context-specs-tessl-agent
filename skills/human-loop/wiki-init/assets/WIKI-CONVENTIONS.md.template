@@ -1,0 +1,121 @@
+# {{DOMAIN_NAME}} Wiki — Conventions
+
+This is a private LLM-maintained wiki / second brain for understanding
+**{{DOMAIN_NAME}}**{{DOMAIN_ONE_LINER}}. The goal is to build a deep, navigable picture
+of the domain — its concepts, entities, workflows, and the architecture best practices
+around it — so a human can reason about the problem space clearly. Pattern follows
+**Karpathy's "LLM Wiki"** idea: synthesis happens **once at ingest time**, not
+re-derived per query (unlike RAG). Sources accumulate; the wiki compounds.
+
+The vault is its **own git repository**, separate from any app codebase. Editing happens
+via Claude Code; browsing happens in any markdown reader or Obsidian.
+
+## Layered structure
+
+| Layer | Path | Who writes | Purpose |
+|---|---|---|---|
+| Sources | `raw/` | **Read-only for the LLM** (except saving fetched URLs). | Immutable raw material: articles, references, manuals, transcripts, podcast notes, tweets, gists, repo notes. |
+| Wiki | `wiki/` | LLM-generated synthesis. | Concept / entity / workflow / source-summary / index pages, cross-linked. |
+| Meta | `_meta/` | LLM-generated. | Ingest log, lint reports. |
+
+Hard rule: **never modify files under `raw/`**. New raw content arrives by the user
+dropping a file in, or `/ingest` saving a URL fetch.
+
+## Page types (`wiki/`)
+
+| Type | Folder | What it is |
+|---|---|---|
+| `concept` | `wiki/concepts/` | An idea or domain concept. |
+| `entity` | `wiki/entities/` | A named thing — an org, role, regulation, tool, vendor, product, protocol. |
+| `workflow` | `wiki/workflows/` | A practice or procedure with steps. |
+| `source` | `wiki/sources/` | One per raw doc. ~200–500 words. Lists "claims extracted" linking the wiki pages that absorbed each claim. |
+| `index` | `wiki/indexes/`, `wiki/MOC.md` | Curated tables of contents. |
+
+**Filenames** are kebab-case slugs and are stable — they're the link target. Renames
+require updating backlinks (the lint command flags broken links). The H1 is the
+human-readable title.
+
+**Page body shape** (concept page is canonical; others adapt):
+
+1. Definition (1–3 sentences)
+2. Why it matters
+3. Mechanics / how it works
+4. Examples — each example cites `[[source-slug]]`
+5. Related: bulleted `[[wikilinks]]`
+6. Open questions (lint feeds these)
+
+## Frontmatter contract (uniform across all types)
+
+```yaml
+---
+type: concept | entity | workflow | source | index
+title: "Human Title"
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+status: stub | draft | stable
+tags: [{{TAGS}}]
+sources: ["[[some-source-slug]]"]   # source-summary backlinks
+aliases: ["other names"]            # for Obsidian alias linking
+---
+```
+
+Source pages additionally carry `raw_path:` pointing into `raw/` (e.g.
+`raw_path: raw/articles/some-doc.pdf`). URL-fetched raw docs additionally carry
+`source_url:` and `fetched_at:` in the raw file's own frontmatter.
+
+## Linking rules
+
+- Use Obsidian `[[wikilinks]]` everywhere.
+- Link by **slug**, not title (`[[some-slug]]`, not `[[Some Long Title]]`). Renames stay
+  localized.
+- Wiki pages **never embed raw content** — paraphrase + cite. Citations are
+  `[[source-slug]]` references that resolve to a `wiki/sources/*.md` page, which itself
+  points back into `raw/`.
+- Every non-trivial claim in a wiki page must trace to at least one `[[source]]`.
+
+## Slash commands
+
+Use `/ingest`, `/lint`, `/query` — all defined in `.claude/commands/`.
+
+| Command | When to use |
+|---|---|
+| `/ingest <path-or-url>` | A new raw source has arrived (or you want to fetch a URL). Reads the source, writes a source-summary, creates/updates 5–15 wiki pages in one pass. Plans the changes first; waits for approval unless `--yolo`. |
+| `/lint [--fix]` | Periodic health check. Surfaces broken links, orphans, stale claims, contradictions, suggested new pages. `--fix` only applies safe categories (broken-link renames, frontmatter normalization, trivial backlinks). |
+| `/query <question>` | Ask a question against the wiki. Reads `MOC.md` for topology, greps `wiki/` for keywords (never `raw/`), follows `[[wikilinks]]` 2 hops. Returns answer with inline `[[wiki-slug]]` citations. If the answer synthesizes across multiple pages, offers post-hoc to promote it to `wiki/inbox/` — promotion only happens after explicit user confirmation. |
+
+## Hard rules
+
+1. **Never modify `raw/`** (except `/ingest` saving a URL fetch into `raw/articles/` or
+   similar with proper frontmatter).
+2. **Every wiki claim cites at least one `[[source]]`.** If you can't cite, you can't
+   write — say so and suggest a source to ingest.
+3. **`/query` reads `wiki/` only, never `raw/`.** That's the whole point of
+   synthesis-at-ingest. If a question can't be answered from `wiki/`, the answer is
+   "ingest more sources" — not "go read the raw docs."
+4. **Prefer updating an existing page over creating a near-duplicate.** Search by slug +
+   alias before creating.
+5. **Rewrite, don't just append.** When a new source supersedes an existing claim,
+   rewrite the page to reflect current understanding and preserve the old version as a
+   dated note below — don't let stale and current claims sit side by side unmarked.
+6. **Update `updated:` and append to `sources:`** whenever a page is modified by an
+   ingest.
+7. **`/ingest` always plans before writing** unless invoked with `--yolo`.
+
+## Vault entry point
+
+Browse from [`wiki/MOC.md`](wiki/MOC.md) — the curated Map-of-Content. `/ingest` and
+`/lint` keep it current.
+
+## Out of scope (v2 — do not build without an explicit request)
+
+Noted so future-Claude doesn't pattern-match into building them:
+
+- Slide generation, chart pipelines, search CLI / UI / web frontend over the wiki.
+- Synthetic data generation (Q&A pairs, eval datasets, fine-tuning corpora).
+- Multi-vault federation, publishing, auth/paywalls.
+- Automatic scheduled lint runs, RAG indexes, embedding stores.
+- Wiring the wiki directly into any app codebase — the wiki is a *knowledge artifact*
+  for the human; any app is a separate codebase.
+
+If a future request touches one of these, treat as v2 scope. Don't sneak it into the
+three commands.

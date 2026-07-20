@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Harness worktrees (per implement-mainspec parallel mode)
+.claude/worktrees/

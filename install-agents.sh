@@ -18,9 +18,9 @@ TEMP_DIR="$(mktemp -d)"
 git clone --depth 1 --quiet "$REPO_URL" "$TEMP_DIR"
 
 # Verify source agents exist
-SOURCE_DIR="$TEMP_DIR/.claude/agents"
+SOURCE_DIR="$TEMP_DIR/subagents"
 if [ ! -d "$SOURCE_DIR" ]; then
-  echo "Error: No .claude/agents/ directory found in the repository." >&2
+  echo "Error: No subagents/ directory found in the repository." >&2
   exit 1
 fi
 

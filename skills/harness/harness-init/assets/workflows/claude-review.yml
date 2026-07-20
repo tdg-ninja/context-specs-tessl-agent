@@ -1,0 +1,63 @@
+# Self-hosted PR reviewer for the harness.
+# Auto-reviews the PR on open and on every push, governed by REVIEW.md at repo
+# root. NON-CONVERSATIONAL by design: the implementer acts on findings by pushing
+# commits, not by replying to threads. This is the harness's one-way reviewer.
+#
+# Want an interactive "@claude do X" assistant too? That's a SEPARATE, optional
+# workflow (Anthropic's stock examples/claude.yml — it can write code, needs
+# contents: write). Add it alongside this file if you want it; it is deliberately
+# NOT bundled here, so the automated reviewer stays one-way. See reviewer-options.md.
+#
+# Written for claude-code-action v1 (unified `prompt` + `claude_args`; it
+# auto-detects review mode from the pull_request event). Two setup steps the
+# harness-init walkthrough handles:
+#   1. AUTH — pick ONE block below. CLAUDE_CODE_OAUTH_TOKEN uses a Claude Max/Pro
+#      subscription (from `claude setup-token`); ANTHROPIC_API_KEY is metered API
+#      billing (better for teams/CI). Add the matching repo secret.
+#   2. PIN — replace @v1 with the current release tag (e.g. @v1.2.3). harness-init
+#      looks up and pins the latest at setup time.
+#
+# NOTE: claude-code-action v1 requires this workflow file to be byte-IDENTICAL on
+# the PR branch and the default branch (a PR cannot alter its own reviewer). So
+# edits here only take effect once merged to main — you cannot test a change to
+# this file from a feature branch.
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write          # required by claude-code-action v1 (OIDC token)
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - name: Claude review
+        uses: anthropics/claude-code-action@v1   # pin to the current release tag (e.g. @v1.2.3)
+        with:
+          # --- AUTH: keep exactly one of these (harness-init Step 7 picks with you) ---
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}  # Max/Pro subscription
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}           # metered API billing
+          # ---------------------------------------------------------------------------
+          # Visual progress comment + full PR context (the v1 review pattern).
+          track_progress: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request. Read REVIEW.md at the repository root and
+            follow its convergence and PRD-aware rules exactly — in particular,
+            after the first review pass suppress new nits and post only Important
+            findings, and when nothing Important remains post the done-marker
+            comment REVIEW.md specifies. Use inline comments for specific issues
+            and one top-level comment for the summary. Be non-conversational:
+            report findings; the implementer responds by pushing commits, not by
+            replying to threads.
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
