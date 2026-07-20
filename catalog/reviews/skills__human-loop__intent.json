@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "artifact": "skills/human-loop/intent",
+  "sha256": "badcd4b579116529cd6638161fadeef4a0bf09ce22fcc49da096f80abe62b976",
+  "status": "reviewed",
+  "reviewer": "context-specs-maintainers",
+  "reviewedAt": "2026-07-20T21:01:27Z",
+  "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+}

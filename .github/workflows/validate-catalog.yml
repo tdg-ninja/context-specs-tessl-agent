@@ -1,0 +1,32 @@
+name: Validate Context Specs catalog
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+      - 'subagents/**'
+      - 'catalog/**'
+      - 'bin/context-specs.py'
+      - 'scripts/test-cli.sh'
+      - '.github/workflows/validate-catalog.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'subagents/**'
+      - 'catalog/**'
+      - 'bin/context-specs.py'
+      - 'scripts/test-cli.sh'
+      - '.github/workflows/validate-catalog.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regenerate catalog
+        run: python3 bin/context-specs.py catalog generate --source .
+      - name: Catalog is committed
+        run: git diff --exit-code catalog/skills-manifest.json
+      - name: CLI smoke test
+        run: scripts/test-cli.sh

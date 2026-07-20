@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "artifact": "skills/sdd/expert-sdd-creator",
+  "sha256": "62742989d6f4f5ba9444eee86813ec5071ea0f93622df10af449cc3b7a8d9bab",
+  "status": "reviewed",
+  "reviewer": "context-specs-maintainers",
+  "reviewedAt": "2026-07-20T21:01:27Z",
+  "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@context-specs/cli",
+  "version": "0.1.0",
+  "description": "Install, update, and verify reviewed Context Specs skills and subagents.",
+  "license": "Apache-2.0",
+  "bin": {
+    "context-specs": "bin/context-specs.py"
+  },
+  "scripts": {
+    "catalog": "python3 bin/context-specs.py catalog generate --source .",
+    "test": "bash scripts/test-cli.sh"
+  },
+  "files": [
+    "bin/",
+    "catalog/",
+    "skills/",
+    "subagents/",
+    "install-agents.sh",
+    "README.md",
+    "LICENSE"
+  ]
+}

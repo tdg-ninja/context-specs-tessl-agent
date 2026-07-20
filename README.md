@@ -237,25 +237,27 @@ improves the context that feeds the next round. That's the cycle you live in.
 
 ## Installation
 
-Context Specs has two kinds of installable content — **skills** and
-**subagents** — each with its own step.
-
-### Skills
-
-```bash
-npx skills add https://github.com/capitalone/context-specs
-```
-
-Installs all skills into your project's `.claude/skills/` directory.
-
-### Subagents
+Install the reviewed Context Specs package from the project you want to equip:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/capitalone/context-specs/main/install-agents.sh | bash
 ```
 
-Run from your target project directory. Copies agent definitions (e.g.
-`slice-implementer.md`) into `.claude/agents/`. Safe to re-run.
+This installs skills into `.claude/skills/`, subagents into `.claude/agents/`, and
+writes `.context-specs/manifest.json` as the lockfile for the reviewed artifact
+digests you received.
+
+If you installed the CLI package, use it directly:
+
+```bash
+context-specs install
+context-specs update
+context-specs verify
+```
+
+By default the CLI installs only artifacts whose current SHA-256 digest has a
+matching review record in the catalog. Use `--allow-unreviewed` only while testing
+local changes.
 
 ---
 

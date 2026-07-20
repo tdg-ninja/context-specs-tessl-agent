@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "artifact": "skills/sdd/spec-planning",
+  "sha256": "d077cb318b9a7c5b65281eb61528b9f35980a1be42d5a4df88a5fa998268817c",
+  "status": "reviewed",
+  "reviewer": "context-specs-maintainers",
+  "reviewedAt": "2026-07-20T21:01:27Z",
+  "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+}

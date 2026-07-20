@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "artifact": "skills/harness/address-feedback",
+  "sha256": "f6007c10b0f496874fe37b1e1cb238ee45ac0f3e23b9584646ea0db487ab80b0",
+  "status": "reviewed",
+  "reviewer": "context-specs-maintainers",
+  "reviewedAt": "2026-07-20T21:01:27Z",
+  "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+}

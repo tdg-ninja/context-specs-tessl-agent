@@ -62,6 +62,8 @@ as you climb — but you can stop on any rung.
   matter what crashes, races, or restarts. Read this when you want to understand
   *why* the machine is safe to leave running. (Optional; you can also hand it to
   an agent to give it a deeper model of the harness.)
+- **[Distribution and review model](./distribution.md)** — how reviewed skills are
+  installed, pinned, updated, and verified across project repos.
 
 ## Where the code lives
 

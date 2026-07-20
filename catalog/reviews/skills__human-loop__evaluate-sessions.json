@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "artifact": "skills/human-loop/evaluate-sessions",
+  "sha256": "af063c050877e1d2cefd285e72a53130984b72268a12ecfe8ec9e15aeb4d30bd",
+  "status": "reviewed",
+  "reviewer": "context-specs-maintainers",
+  "reviewedAt": "2026-07-20T21:01:27Z",
+  "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+}
