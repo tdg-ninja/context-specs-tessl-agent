@@ -1,244 +1,76 @@
 {
   "schemaVersion": 1,
   "package": "context-specs",
-  "generatedAt": "2026-07-20T21:01:27Z",
+  "generatedAt": "2026-07-20T23:59:31.914Z",
   "sourceRevision": "catalog",
-  "catalogSha256": "e1dcba15dd9ba71e88550e1a8e3a7f2303fe91052f3df569ed3053d4ef35595b",
+  "catalogSha256": "47c2bb9990e7702fd9dd6ac19f3c5708650d90cee7e53be6404b1b48b0d0c3b4",
   "policy": {
-    "installDefault": "reviewed-only"
+    "installDefault": "reviewed-only",
+    "registryDefault": "cap1-context-specs/context-specs"
   },
   "skills": [
     {
       "name": "address-feedback",
-      "description": "Respond to an automated reviewer's findings on the current feature PR \u2014 a narrow, headless responder. Triages each reviewer finding into Clear / Ambiguous / Complex / Out-of-PRD-Scope, then acts \u2014 fixes the cause and pushes (diff-only) for Clear, posts one in-thread reply for the rest. Skips findings it already handled. Invoked headless by the dispatcher's feedback gate; the dispatcher owns the round counter and the STUCK escalation. Triggers - address-feedback, address review comments, respond to PR review, handle reviewer findings, PR feedback loop (project)",
-      "sourcePath": "skills/harness/address-feedback",
+      "description": "Respond to an automated reviewer's findings on the current feature PR \u2014 a narrow, headless responder. Triages each reviewer finding into Clear / Ambiguous / Complex / Out-of-PRD-Scope, then acts \u2014 fixes the cause and pushes (diff-only) for Clear, posts one in-thread reply for the rest. Skips findings it already handled. Invoked headless by the dispatcher's feedback gate; the dispatcher owns the round counter and the STUCK escalation. Triggers - address-feedback, address review comments, respond to PR review, handle reviewer findings, PR feedback loop (project). Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.",
+      "sourcePath": "skills/address-feedback",
       "installPath": ".claude/skills/address-feedback",
-      "sha256": "f6007c10b0f496874fe37b1e1cb238ee45ac0f3e23b9584646ea0db487ab80b0",
+      "sha256": "f384297ba57efe0984df6a3944aa1dd4a9a01f444abff74aba66034d4128344e",
       "review": {
         "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+        "reviewedAt": "2026-07-20T23:54:07.896Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f3-8497-7098-9873-b6b11724ba37",
+        "score": 83
       },
       "files": [
         {
-          "path": "skills/harness/address-feedback/SKILL.md",
-          "sha256": "a2069a9474ebc90875ea893c67c549792b6525615b47b03e9d72d9f55aeaf41d"
+          "path": "skills/address-feedback/SKILL.md",
+          "sha256": "27ce80e2ee6658a15c7b6bc633c654848d62b26c5e0ca0da404b20c1c0278225"
         },
         {
-          "path": "skills/harness/address-feedback/references/full-instructions.md",
+          "path": "skills/address-feedback/references/full-instructions.md",
           "sha256": "cfe380902ca2376b8745837035b83535c0ec954fefef53585c9afff634ee8fa2"
         },
         {
-          "path": "skills/harness/address-feedback/references/gh-mechanics.md",
+          "path": "skills/address-feedback/references/gh-mechanics.md",
           "sha256": "3f9a343c91c26dd93f079f3c92e0ed0c3ef696f3b26eca53b08583387b893afa"
         },
         {
-          "path": "skills/harness/address-feedback/references/triage.md",
+          "path": "skills/address-feedback/references/triage.md",
           "sha256": "c57849789c5320a55c5175a3a73d212b52d6cffbfbb1d8e83370944d4e1d7500"
         }
       ]
     },
     {
-      "name": "fix-local-checks",
-      "description": "Patch the code so `scripts/local-checks.sh` passes, after /implement-mainspec \u2014 a narrow post-implement polish specialist. Reads the (remediation-rich) check failures, fixes the underlying cause, never silences a check, re-verifies, and commits. Invoked headless by the dispatcher's two-strike local-checks gate; the dispatcher owns the retry counter. Triggers - fix-local-checks, fix lint, fix local checks, fix typecheck, make checks pass, post-implement polish (project)",
-      "sourcePath": "skills/harness/fix-local-checks",
-      "installPath": ".claude/skills/fix-local-checks",
-      "sha256": "2b685dbf7ef8d378f4972c2ddcfafbec745f5ea1652fa4de8312a3fa17174ce9",
-      "review": {
-        "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
-      },
-      "files": [
-        {
-          "path": "skills/harness/fix-local-checks/SKILL.md",
-          "sha256": "3082990f5e4c2787b03b35c5c8ed5344a7cd99befd0968d06fe83af4c33d0a06"
-        },
-        {
-          "path": "skills/harness/fix-local-checks/references/full-instructions.md",
-          "sha256": "16b610173d8813fe12aade567bb2a310a2f63a407064a3e169247cca03051006"
-        }
-      ]
-    },
-    {
-      "name": "harness-init",
-      "description": "One-time, guided setup of the local agent-first coding harness \u2014 the polling loop, the deterministic dispatcher, its config, the AGENTS.md contract, and the worktree provisioning that makes per-feature worktrees runnable. Use when a developer wants to set up, bootstrap, install, or initialize the coding harness for the first time in a project.",
-      "sourcePath": "skills/harness/harness-init",
-      "installPath": ".claude/skills/harness-init",
-      "sha256": "e7c11c9246b5bda4ca6e82beae87be570922c3f03c1b4f85815094f13648a0ee",
-      "review": {
-        "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
-      },
-      "files": [
-        {
-          "path": "skills/harness/harness-init/SKILL.md",
-          "sha256": "4acf1671782efa87a0276caf8696b2423d9fec5e76dedf8875915f374588bac4"
-        },
-        {
-          "path": "skills/harness/harness-init/assets/AGENTS.md.template",
-          "sha256": "1ab0b8abf3fb2aa9c938e203dfc0229ee1d776d3f508c35df9c8dc8b984ec078"
-        },
-        {
-          "path": "skills/harness/harness-init/assets/REVIEW.md",
-          "sha256": "5bb393fc70084bed49788a93e0802f71fd3f30d35acc78cdf02b2b102ffc22d5"
-        },
-        {
-          "path": "skills/harness/harness-init/assets/harness-env.template",
-          "sha256": "7ad65726dc4dc5ef86ba1c76f7a6bffa9b1e27df54cd075cc339b897c195f736"
-        },
-        {
-          "path": "skills/harness/harness-init/assets/harness-lib.sh",
-          "sha256": "8f15218dec6a78660b8c223137625b44181264efb1ecd3cdd7e1791dcb25b375"
-        },
-        {
-          "path": "skills/harness/harness-init/assets/harness-tick.sh",
-          "sha256": "c6e83da642dad811e1e3f29c6fe0c163995571ade21c29066272f2caba15f0b8"
-        },
-        {
-          "path": "skills/harness/harness-init/assets/learn-loop-SKILL.md",
-          "sha256": "37f6b263168880a3e2110a8a0edd58746cb343ef5b2e0e05a0813bf578818774"
-        },
-        {
-          "path": "skills/harness/harness-init/assets/learn-tick.sh",
-          "sha256": "bb23a2eafafe96e756e993241bce154fb14e1a8ea09563ba5b0e063645266dc9"
-        },
-        {
-          "path": "skills/harness/harness-init/assets/poll-and-dispatch-SKILL.md",
-          "sha256": "29c9b8dc5d6aa8c1e4acb55cd237bfa16c2179bd5de4961019eb0ed397e68f12"
-        },
-        {
-          "path": "skills/harness/harness-init/assets/poll-and-dispatch.sh",
-          "sha256": "1ca69549b311f23c72ff561a4b185fc1f7708950e6e4fe88a2e835fc1d67268a"
-        },
-        {
-          "path": "skills/harness/harness-init/assets/workflows/claude-review.yml",
-          "sha256": "632b3c07fbb18740da8a582e84d07ee341078954aec68dcacb18f826dc456823"
-        },
-        {
-          "path": "skills/harness/harness-init/references/agents-md-guidance.md",
-          "sha256": "795ade6cf1f2a3d11fa1694a767706c0390bc148ffab57f33df3e9bbbf071b37"
-        },
-        {
-          "path": "skills/harness/harness-init/references/config-options.md",
-          "sha256": "6cb8863b13584c56f9c9eed50ccbba832693540ea173f49be65e684d5822b965"
-        },
-        {
-          "path": "skills/harness/harness-init/references/dispatcher-explained.md",
-          "sha256": "68232274fab5d27f9ff03ffe20fa4bf6e240a42defefa735de02b59a7af34c4d"
-        },
-        {
-          "path": "skills/harness/harness-init/references/full-instructions.md",
-          "sha256": "9e2e4782b3f94ff43609449252956a70917e8340b0061e9952085bfcff175425"
-        },
-        {
-          "path": "skills/harness/harness-init/references/invariants-to-preserve.md",
-          "sha256": "1f241e7d694a01e312e46d97d942274cbe094f360e4a9da33b3796fc1190e58b"
-        },
-        {
-          "path": "skills/harness/harness-init/references/local-checks-design.md",
-          "sha256": "acf443dd3daceecb999652d7e6f947271828e37e2ea2e5e9b854dbbd465ef7f7"
-        },
-        {
-          "path": "skills/harness/harness-init/references/mental-model.md",
-          "sha256": "86818bd718ce7603a40cae3ae45ad75f78333072cae13ad43c27f6cf5e52aae3"
-        },
-        {
-          "path": "skills/harness/harness-init/references/project-discovery.md",
-          "sha256": "a92f2b0e804ac447464e63fb7df29d4135f83b7ee333c5ed26a973bdcd1a2940"
-        },
-        {
-          "path": "skills/harness/harness-init/references/reviewer-options.md",
-          "sha256": "d6ea261ba56984b6ecdb2bf3f69befcc52f80e7fcbfb52d3cfecb49a60ebb169"
-        },
-        {
-          "path": "skills/harness/harness-init/references/worktree-bootstrap.md",
-          "sha256": "e6e6769641efa330f30213c7ad782442d65850b8abb9ea0afdd803aeb1db9ccc"
-        },
-        {
-          "path": "skills/harness/harness-init/scripts/preflight.sh",
-          "sha256": "e6a4385b00922b3aa2e7674891e37106c2a1f07b36c6b147e39a0c2ab57ef5ab"
-        }
-      ]
-    },
-    {
-      "name": "learn",
-      "description": "Update the project's long-term memory after a merge to main. Reads the merged diff and the current memory, then writes Expert shards, discovered invariants, candidate lints, and AGENTS.md pointers \u2014 all on a reviewable learn/<sha> PR. Use post-merge (the harness invokes it automatically) or with --rebuild to regenerate memory from scratch. Triggers - learn, expert-update, update memory, update expert, post-merge memory, self-improve (project)",
-      "sourcePath": "skills/harness/learn",
-      "installPath": ".claude/skills/learn",
-      "sha256": "7e6d91dd85a19c2a144c108bed9e7dbbbc9b50e6158aaeb00228ee018b3fcb4d",
-      "review": {
-        "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
-      },
-      "files": [
-        {
-          "path": "skills/harness/learn/SKILL.md",
-          "sha256": "1cf8c96a14ee396fc5ab9b755438b15bc93e44d6793c04525b465ba8119124ee"
-        },
-        {
-          "path": "skills/harness/learn/references/agents-md-guidance.md",
-          "sha256": "e6a5bf4e9a39c15f9e55f59411436972a3227c8e2fb9f2143cfe6716a6d53fca"
-        },
-        {
-          "path": "skills/harness/learn/references/consensus.md",
-          "sha256": "3275d778b88c974ac73ef54cd4ceb67c25a317ab832a4479d89a3804cd394047"
-        },
-        {
-          "path": "skills/harness/learn/references/expert-shards.md",
-          "sha256": "e16948b7508871f560cc615cb114f18f30a6b4c0974d8c44f334b8021bf43750"
-        },
-        {
-          "path": "skills/harness/learn/references/full-instructions.md",
-          "sha256": "8019a6ddb0b1302e3ca2293cffa76b46bafd63d9e5192f21fb509ca4bf3254f2"
-        },
-        {
-          "path": "skills/harness/learn/references/invariant-discovery.md",
-          "sha256": "00387ec2f846f58d353ba52735ae69402413dda3c29812958f2e900d9f6b90ec"
-        },
-        {
-          "path": "skills/harness/learn/references/routing-rules.md",
-          "sha256": "1e25441fe6b869670ae87e538a2c62eb441b76ccaf2204f276684c44cbe00217"
-        },
-        {
-          "path": "skills/harness/learn/scripts/check-agents-md.sh",
-          "sha256": "46fc459fc2460d4652574e2e73da2b66912241f77d589ad535610de52d738442"
-        }
-      ]
-    },
-    {
       "name": "evaluate-pr",
-      "description": "Evaluate a PR the harness produced \u2014 walk the change, run the system together, and build a firm understanding before you merge it. Use after the harness hands a converged PR to you for review (the \"Ready for your review\" comment), or any time you want to deeply review an agent-authored PR. The human-attentive skill at the back of the chain; the mirror of /intent. Outcomes \u2014 merge, close, or fix-it-yourself-and-push - no handing work back to the loop.",
-      "sourcePath": "skills/human-loop/evaluate-pr",
+      "description": "Evaluate a PR the harness produced \u2014 walk the change, run the system together, and build a firm understanding before you merge it. Use after the harness hands a converged PR to you for review (the \"Ready for your review\" comment), or any time you want to deeply review an agent-authored PR. The human-attentive skill at the back of the chain; the mirror of /intent. Outcomes \u2014 merge, close, or fix-it-yourself-and-push - no handing work back to the loop. Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.",
+      "sourcePath": "skills/evaluate-pr",
       "installPath": ".claude/skills/evaluate-pr",
-      "sha256": "d268ad45d33a84f8239f1bb38dad5af1033d52c7c4474d24f451b1d5280d836b",
+      "sha256": "a9ccf48b760d157d83884af20e5f96965654ead5a0fd73c0781807f562d43f4a",
       "review": {
         "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+        "reviewedAt": "2026-07-20T23:54:34.713Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f3-ed59-7087-8253-e1bb36cd0059",
+        "score": 88
       },
       "files": [
         {
-          "path": "skills/human-loop/evaluate-pr/SKILL.md",
-          "sha256": "100ff35b236d57b722f09a13b1c9f4d1c0c732cb707cb58d0d2c2be7cae718d1"
+          "path": "skills/evaluate-pr/SKILL.md",
+          "sha256": "e2c94b408ddf8d0be6d8e356c8f64fc72d19e901cc0d5086413730da5fbfdee9"
         },
         {
-          "path": "skills/human-loop/evaluate-pr/references/full-instructions.md",
+          "path": "skills/evaluate-pr/references/full-instructions.md",
           "sha256": "208551d1b9099850378d87e711053fca1a2e1952055e1ce6bbb555765de47393"
         },
         {
-          "path": "skills/human-loop/evaluate-pr/references/verdict.md",
+          "path": "skills/evaluate-pr/references/verdict.md",
           "sha256": "891ce63e211d939b1660caeba46f8b9a280e0859e5241fa6d188444ffe7ecb5f"
         },
         {
-          "path": "skills/human-loop/evaluate-pr/references/walkthrough.md",
+          "path": "skills/evaluate-pr/references/walkthrough.md",
           "sha256": "7d26bf47768e111aef3b5f285d52e469114f5b5b86c91259b5c9d8acc1dd7b03"
         }
       ]
@@ -246,308 +78,503 @@
     {
       "name": "evaluate-sessions",
       "description": "Evaluate the build trail of a PR \u2014 read the claude -p sessions the harness ran to build it, find where the project's context (Expert / AGENTS.md / skill / spec) served or failed the agents, then capture the learnings as evals (regression tests over the harness's own skills/context) and context fixes. Use when resolving a STUCK (diagnosis-first), auditing how a converged PR was built, or auditing a /learn memory PR. Human-driven and conversational \u2014 the trail-evaluating sibling of /evaluate-pr. Outcomes land on a branch (the PR's, or a fresh capture branch if you'll discard the PR) and reach memory via merge + /learn. Triggers - evaluate-sessions, evaluate sessions, review the build trail, diagnose stuck, audit how this was built, session observability.",
-      "sourcePath": "skills/human-loop/evaluate-sessions",
+      "sourcePath": "skills/evaluate-sessions",
       "installPath": ".claude/skills/evaluate-sessions",
-      "sha256": "af063c050877e1d2cefd285e72a53130984b72268a12ecfe8ec9e15aeb4d30bd",
+      "sha256": "fbf0eb07f97a1c4a5013fdd5ea37689219d78450300250fc0651a734703f0063",
       "review": {
         "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+        "reviewedAt": "2026-07-20T23:55:01.895Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f4-5786-7109-9b46-efe99f68d279",
+        "score": 94
       },
       "files": [
         {
-          "path": "skills/human-loop/evaluate-sessions/SKILL.md",
+          "path": "skills/evaluate-sessions/SKILL.md",
           "sha256": "91fbf5dee82ef3f69cd0480acbbbc9fd0fc2598f9839c3529c4ac397c6b232f2"
         },
         {
-          "path": "skills/human-loop/evaluate-sessions/references/evals.md",
+          "path": "skills/evaluate-sessions/references/evals.md",
           "sha256": "97b5f0fa4a7f49c5b4c36d3b293fc2193ab9dad86a54a4d2b862cab57ff46172"
         },
         {
-          "path": "skills/human-loop/evaluate-sessions/references/full-instructions.md",
+          "path": "skills/evaluate-sessions/references/full-instructions.md",
           "sha256": "d2ed3a4c94e17b6f62fb1d986150f1b46dd0424f4bf6a649f4b56260022884c9"
         },
         {
-          "path": "skills/human-loop/evaluate-sessions/references/observability-tooling.md",
+          "path": "skills/evaluate-sessions/references/observability-tooling.md",
           "sha256": "b2154e363dfefc8608805aaf2f4da2b0197e05081b2e67e4a8576c908c6f7e43"
         },
         {
-          "path": "skills/human-loop/evaluate-sessions/references/outcomes.md",
+          "path": "skills/evaluate-sessions/references/outcomes.md",
           "sha256": "524d6e6b81372b99a7d39819fccb087173d075b1d12a280424aaf73d8f9bc374"
         },
         {
-          "path": "skills/human-loop/evaluate-sessions/references/trace-reading.md",
+          "path": "skills/evaluate-sessions/references/trace-reading.md",
           "sha256": "ea61ea34d6ca8276124a0ccd1482a2d3ee98bf6c5bb6e24cea7a55a2119332a9"
         },
         {
-          "path": "skills/human-loop/evaluate-sessions/scripts/resolve-sessions.sh",
+          "path": "skills/evaluate-sessions/scripts/resolve-sessions.sh",
           "sha256": "20179515ee763c480b1416966fd12ae5924e525780b14cd7a1cf510580a21f5a"
         }
       ]
     },
     {
-      "name": "intent",
-      "description": "Turn an open-ended idea into a PRD plus a runnable definition of done. Use when a developer wants to start a new feature, \"file a PRD\", \"spec out\" or \"scope\" an idea, think through what to build, or kick off the harness for a piece of work. Produces prds/<feature>/prd.md + an executable prds/<feature>/run-prd-test.sh on a prd/<author-slug>/<feature> branch. The one human-attentive skill in the chain.",
-      "sourcePath": "skills/human-loop/intent",
-      "installPath": ".claude/skills/intent",
-      "sha256": "badcd4b579116529cd6638161fadeef4a0bf09ce22fcc49da096f80abe62b976",
-      "review": {
-        "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
-      },
-      "files": [
-        {
-          "path": "skills/human-loop/intent/SKILL.md",
-          "sha256": "c382547e36bc01cf5093866a839e624c6cc2a9a1658b7b3c170bf6d0f16faa2e"
-        },
-        {
-          "path": "skills/human-loop/intent/references/elicitation.md",
-          "sha256": "4942d8260443563628ed65acf01b7151c03aee1a957135cb4419830b00be500f"
-        },
-        {
-          "path": "skills/human-loop/intent/references/full-instructions.md",
-          "sha256": "6e7c05c14d035307b5d5c190a541440b3f64f33251ef72f60e5c131afb8820f6"
-        },
-        {
-          "path": "skills/human-loop/intent/references/prd-template.md",
-          "sha256": "24583b7f422a6bdd5a769a477cf99879553e0bfbcba03f156b542731262be342"
-        },
-        {
-          "path": "skills/human-loop/intent/references/right-reason.md",
-          "sha256": "93e7b3559bc4f0240d3b2b2b16d355247c04ede8be7d307f2fa1a65869ff9d7e"
-        },
-        {
-          "path": "skills/human-loop/intent/references/runner-recipes.md",
-          "sha256": "5f36574e28e5b8c79f75afce35a13cc869722837bc2fb0be01ab022a94e3ac19"
-        }
-      ]
-    },
-    {
-      "name": "wiki-init",
-      "description": "One-time, guided setup of a standalone LLM-maintained wiki \u2014 a Karpathy \"LLM Wiki\" style knowledge base for a problem domain and your general architecture best practices. Scaffolds an external wiki vault (its own git repo) with /ingest, /query, /lint commands and a conventions doc. Use when a developer wants to start, create, bootstrap, or initialize a wiki / second-brain / knowledge base to understand a problem space before building. The front of the Human Loop's Understanding phase.",
-      "sourcePath": "skills/human-loop/wiki-init",
-      "installPath": ".claude/skills/wiki-init",
-      "sha256": "900be0463e592573f1b4f36331929e323e7b463892c92ec2cd7d36062314e025",
-      "review": {
-        "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
-      },
-      "files": [
-        {
-          "path": "skills/human-loop/wiki-init/SKILL.md",
-          "sha256": "38f63eb8e8c46fc6caa874f27e69aa6056d7748cca1eee2cb6e6d3eac4747478"
-        },
-        {
-          "path": "skills/human-loop/wiki-init/assets/MOC.md.template",
-          "sha256": "571fc15bf0ca3c1c06ec0ff2a409ce1f9f7c1c0eb66066bff49345866b8127f5"
-        },
-        {
-          "path": "skills/human-loop/wiki-init/assets/README.md.template",
-          "sha256": "e11385fe28109141e091f8d13ebb69e45b69b024e4e5148ae770a549d8cb0073"
-        },
-        {
-          "path": "skills/human-loop/wiki-init/assets/WIKI-CONVENTIONS.md.template",
-          "sha256": "a2f85b55f4729fa27953926462b10b6b73c9a3b47c9d5e0723d44a3e7d92c5c2"
-        },
-        {
-          "path": "skills/human-loop/wiki-init/assets/commands/ingest.md",
-          "sha256": "df10be6fffc17a10dbf337a604e5d62a43fe87a1ad9777b57088aeb67cbbaacb"
-        },
-        {
-          "path": "skills/human-loop/wiki-init/assets/commands/lint.md",
-          "sha256": "42c0b412b79ee1b49080b3f3a6416eaef17b579587ec8378a0c0784edc3764fc"
-        },
-        {
-          "path": "skills/human-loop/wiki-init/assets/commands/query.md",
-          "sha256": "42737b15801f2b48ea475fa942b4b03baf1fc9cadeb9eedf2d61545c7b598b2f"
-        },
-        {
-          "path": "skills/human-loop/wiki-init/assets/gitignore.snippet",
-          "sha256": "273259f07ab6703f0c75ac9cf2cfe8ee48d771105c7743de7bdbd87728d47620"
-        },
-        {
-          "path": "skills/human-loop/wiki-init/references/domain-discovery.md",
-          "sha256": "7109b0002b99c91e339e20ebcca8346b52334799c990109e6833737df835b746"
-        },
-        {
-          "path": "skills/human-loop/wiki-init/references/full-instructions.md",
-          "sha256": "d199810b2b9c2ed0fbcd8ab9f9de8b293cb40650ab3262b121e410079aa58ed0"
-        },
-        {
-          "path": "skills/human-loop/wiki-init/references/hardening-lessons.md",
-          "sha256": "71bb5994070d1a27128a228d5eafe4e48f94cd989c3fa1cf75273f41d3632234"
-        },
-        {
-          "path": "skills/human-loop/wiki-init/references/llm-wiki-pattern.md",
-          "sha256": "679d12796a14a5c4b2afea4e419b8286d36920a8c523f14c984c5a04967c0fec"
-        }
-      ]
-    },
-    {
       "name": "expert-sdd-creator",
-      "description": "Meta skill for creating new SDD experts from domain documentation. Provide a markdown file path with domain knowledge + optional steering context. Automatically synthesizes references, generates signal scripts, validates, and registers in experts.md/signals.md catalogs. Single-prompt creation with follow-up tweaks. Triggers - create expert, new expert, make expert, expert for, domain expert, add expert (project)",
-      "sourcePath": "skills/sdd/expert-sdd-creator",
+      "description": "Meta skill for creating new SDD experts from domain documentation. Provide a markdown file path with domain knowledge + optional steering context. Automatically synthesizes references, generates signal scripts, validates, and registers in experts.md/signals.md catalogs. Single-prompt creation with follow-up tweaks. Triggers - create expert, new expert, make expert, expert for, domain expert, add expert (project). Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.",
+      "sourcePath": "skills/expert-sdd-creator",
       "installPath": ".claude/skills/expert-sdd-creator",
-      "sha256": "62742989d6f4f5ba9444eee86813ec5071ea0f93622df10af449cc3b7a8d9bab",
+      "sha256": "af6f76d43c135bc06a5eba6c05f9e3861ab2ea8ec854860de071f7dc581e4b10",
       "review": {
         "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+        "reviewedAt": "2026-07-20T23:55:28.699Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f4-c03a-727c-9ae8-32ce98efae7d",
+        "score": 94
       },
       "files": [
         {
-          "path": "skills/sdd/expert-sdd-creator/SKILL.md",
-          "sha256": "c4367899e3422f9fd4cee243d61c9a544afcc6edad6759af10047df390d580fa"
+          "path": "skills/expert-sdd-creator/SKILL.md",
+          "sha256": "8e054087f1bf02f8f0c10f3935558d2647772fd5525df6316d35b05f27539ed2"
         },
         {
-          "path": "skills/sdd/expert-sdd-creator/references/catalog-formats.md",
+          "path": "skills/expert-sdd-creator/references/catalog-formats.md",
           "sha256": "7908480f1b930f0388e7beb072e39181f462ebcc1bbf55c183f0d3dd89407c85"
         },
         {
-          "path": "skills/sdd/expert-sdd-creator/references/expert-structure.md",
+          "path": "skills/expert-sdd-creator/references/expert-structure.md",
           "sha256": "4a0f3f3df6a81a64c22519240f572ddef48b50140fe7f0af30536c7ee88cdbf2"
         },
         {
-          "path": "skills/sdd/expert-sdd-creator/references/full-instructions.md",
+          "path": "skills/expert-sdd-creator/references/full-instructions.md",
           "sha256": "e7bcd3a08d352868022f1222e60248d65576949450325d018393b482b9c3423e"
         },
         {
-          "path": "skills/sdd/expert-sdd-creator/references/signal-patterns.md",
+          "path": "skills/expert-sdd-creator/references/signal-patterns.md",
           "sha256": "2c8805a0c1d6aa0d8e6e5533d3a945f5cd65bb48ba17e464e6084e37c8e3a69c"
         },
         {
-          "path": "skills/sdd/expert-sdd-creator/scripts/register_expert.sh",
+          "path": "skills/expert-sdd-creator/scripts/register_expert.sh",
           "sha256": "84da15da7c75057438e9e6b233e557ac56a4760869b07bcd4e4708b30c78ef5d"
         },
         {
-          "path": "skills/sdd/expert-sdd-creator/scripts/validate_expert.sh",
+          "path": "skills/expert-sdd-creator/scripts/validate_expert.sh",
           "sha256": "7aa12a79ca8b4f6eb2deba09bd7445e591c9a04da02cf1789a21631e7b9aac82"
         }
       ]
     },
     {
-      "name": "implement-mainspec",
-      "description": "Implements a mainspec end-to-end by auto-detecting mode. Sequential mode (\u22643 slices) commits slices in order on the current `feature/<feature>` branch. Parallel mode (>3 slices) uses dependency-aware tiered execution with per-slice worktrees, branches, PRs, and auto-merge into the feature branch. Agent-first \u2014 invoked headless by the harness dispatcher with the feature slug as its single argument. No human-in-the-loop, no approval gates.",
-      "sourcePath": "skills/sdd/implement-mainspec",
-      "installPath": ".claude/skills/implement-mainspec",
-      "sha256": "4448084dc2302a0fccf147eac7020834f5c53a7605335ca13889a51937cf7f48",
+      "name": "fix-local-checks",
+      "description": "Patch the code so `scripts/local-checks.sh` passes, after /implement-mainspec \u2014 a narrow post-implement polish specialist. Reads the (remediation-rich) check failures, fixes the underlying cause, never silences a check, re-verifies, and commits. Invoked headless by the dispatcher's two-strike local-checks gate; the dispatcher owns the retry counter. Triggers - fix-local-checks, fix lint, fix local checks, fix typecheck, make checks pass, post-implement polish (project). Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.",
+      "sourcePath": "skills/fix-local-checks",
+      "installPath": ".claude/skills/fix-local-checks",
+      "sha256": "f93a445b9295ae9c0a217fd0a5dd0af78f23018929b5765ec733b67ba91987ea",
       "review": {
         "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+        "reviewedAt": "2026-07-20T23:55:55.799Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f5-2a17-751e-a654-5bd72a351f03",
+        "score": 88
       },
       "files": [
         {
-          "path": "skills/sdd/implement-mainspec/SKILL.md",
-          "sha256": "1c09573ea4091885691cc1111e1414c409f58d99e2456628082e0b142139ddc5"
+          "path": "skills/fix-local-checks/SKILL.md",
+          "sha256": "b33eb49fab314a89b3c1f5338d2803113711c1096c01aae6a365820baba58521"
         },
         {
-          "path": "skills/sdd/implement-mainspec/references/error-handling.md",
+          "path": "skills/fix-local-checks/references/full-instructions.md",
+          "sha256": "16b610173d8813fe12aade567bb2a310a2f63a407064a3e169247cca03051006"
+        }
+      ]
+    },
+    {
+      "name": "harness-init",
+      "description": "One-time, guided setup of the local agent-first coding harness \u2014 the polling loop, the deterministic dispatcher, its config, the AGENTS.md contract, and the worktree provisioning that makes per-feature worktrees runnable. Use when a developer wants to set up, bootstrap, install, or initialize the coding harness for the first time in a project.",
+      "sourcePath": "skills/harness-init",
+      "installPath": ".claude/skills/harness-init",
+      "sha256": "2e468ce8e31cc05b01cc761bb87e13ef48d277a809f3a7898aa94cfbde5b3f71",
+      "review": {
+        "status": "reviewed",
+        "reviewedAt": "2026-07-20T23:56:22.915Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f5-9402-746e-b2ce-484984b403e9",
+        "score": 94
+      },
+      "files": [
+        {
+          "path": "skills/harness-init/SKILL.md",
+          "sha256": "4acf1671782efa87a0276caf8696b2423d9fec5e76dedf8875915f374588bac4"
+        },
+        {
+          "path": "skills/harness-init/assets/AGENTS.md.template",
+          "sha256": "1ab0b8abf3fb2aa9c938e203dfc0229ee1d776d3f508c35df9c8dc8b984ec078"
+        },
+        {
+          "path": "skills/harness-init/assets/REVIEW.md",
+          "sha256": "5bb393fc70084bed49788a93e0802f71fd3f30d35acc78cdf02b2b102ffc22d5"
+        },
+        {
+          "path": "skills/harness-init/assets/harness-env.template",
+          "sha256": "7ad65726dc4dc5ef86ba1c76f7a6bffa9b1e27df54cd075cc339b897c195f736"
+        },
+        {
+          "path": "skills/harness-init/assets/harness-lib.sh",
+          "sha256": "8f15218dec6a78660b8c223137625b44181264efb1ecd3cdd7e1791dcb25b375"
+        },
+        {
+          "path": "skills/harness-init/assets/harness-tick.sh",
+          "sha256": "c6e83da642dad811e1e3f29c6fe0c163995571ade21c29066272f2caba15f0b8"
+        },
+        {
+          "path": "skills/harness-init/assets/learn-loop-SKILL.md",
+          "sha256": "37f6b263168880a3e2110a8a0edd58746cb343ef5b2e0e05a0813bf578818774"
+        },
+        {
+          "path": "skills/harness-init/assets/learn-tick.sh",
+          "sha256": "bb23a2eafafe96e756e993241bce154fb14e1a8ea09563ba5b0e063645266dc9"
+        },
+        {
+          "path": "skills/harness-init/assets/poll-and-dispatch-SKILL.md",
+          "sha256": "29c9b8dc5d6aa8c1e4acb55cd237bfa16c2179bd5de4961019eb0ed397e68f12"
+        },
+        {
+          "path": "skills/harness-init/assets/poll-and-dispatch.sh",
+          "sha256": "1ca69549b311f23c72ff561a4b185fc1f7708950e6e4fe88a2e835fc1d67268a"
+        },
+        {
+          "path": "skills/harness-init/assets/workflows/claude-review.yml",
+          "sha256": "632b3c07fbb18740da8a582e84d07ee341078954aec68dcacb18f826dc456823"
+        },
+        {
+          "path": "skills/harness-init/references/agents-md-guidance.md",
+          "sha256": "795ade6cf1f2a3d11fa1694a767706c0390bc148ffab57f33df3e9bbbf071b37"
+        },
+        {
+          "path": "skills/harness-init/references/config-options.md",
+          "sha256": "6cb8863b13584c56f9c9eed50ccbba832693540ea173f49be65e684d5822b965"
+        },
+        {
+          "path": "skills/harness-init/references/dispatcher-explained.md",
+          "sha256": "68232274fab5d27f9ff03ffe20fa4bf6e240a42defefa735de02b59a7af34c4d"
+        },
+        {
+          "path": "skills/harness-init/references/full-instructions.md",
+          "sha256": "9e2e4782b3f94ff43609449252956a70917e8340b0061e9952085bfcff175425"
+        },
+        {
+          "path": "skills/harness-init/references/invariants-to-preserve.md",
+          "sha256": "1f241e7d694a01e312e46d97d942274cbe094f360e4a9da33b3796fc1190e58b"
+        },
+        {
+          "path": "skills/harness-init/references/local-checks-design.md",
+          "sha256": "acf443dd3daceecb999652d7e6f947271828e37e2ea2e5e9b854dbbd465ef7f7"
+        },
+        {
+          "path": "skills/harness-init/references/mental-model.md",
+          "sha256": "86818bd718ce7603a40cae3ae45ad75f78333072cae13ad43c27f6cf5e52aae3"
+        },
+        {
+          "path": "skills/harness-init/references/project-discovery.md",
+          "sha256": "a92f2b0e804ac447464e63fb7df29d4135f83b7ee333c5ed26a973bdcd1a2940"
+        },
+        {
+          "path": "skills/harness-init/references/reviewer-options.md",
+          "sha256": "d6ea261ba56984b6ecdb2bf3f69befcc52f80e7fcbfb52d3cfecb49a60ebb169"
+        },
+        {
+          "path": "skills/harness-init/references/worktree-bootstrap.md",
+          "sha256": "e6e6769641efa330f30213c7ad782442d65850b8abb9ea0afdd803aeb1db9ccc"
+        },
+        {
+          "path": "skills/harness-init/scripts/preflight.sh",
+          "sha256": "e6a4385b00922b3aa2e7674891e37106c2a1f07b36c6b147e39a0c2ab57ef5ab"
+        }
+      ]
+    },
+    {
+      "name": "implement-mainspec",
+      "description": "Implements a mainspec end-to-end by auto-detecting mode. Sequential mode (\u22643 slices) commits slices in order on the current `feature/<feature>` branch. Parallel mode (>3 slices) uses dependency-aware tiered execution with per-slice worktrees, branches, PRs, and auto-merge into the feature branch. Agent-first \u2014 invoked headless by the harness dispatcher with the feature slug as its single argument. No human-in-the-loop, no approval gates. Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.",
+      "sourcePath": "skills/implement-mainspec",
+      "installPath": ".claude/skills/implement-mainspec",
+      "sha256": "103ecbc5eda35b6487f4342dfa69cc949020e42f007c9075c3728425fa8ffc5d",
+      "review": {
+        "status": "reviewed",
+        "reviewedAt": "2026-07-20T23:56:49.785Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f5-fcf8-7157-b927-1fb53eda109a",
+        "score": 74
+      },
+      "files": [
+        {
+          "path": "skills/implement-mainspec/SKILL.md",
+          "sha256": "b00b59a1ab95fe8e774fd01f70e976f784a522d3aad2669d00af0475c582f999"
+        },
+        {
+          "path": "skills/implement-mainspec/references/error-handling.md",
           "sha256": "ae662a076fe5d02401dd43d8e860a1d6689396b66e44f09b8d0e69bd53e379b2"
         },
         {
-          "path": "skills/sdd/implement-mainspec/references/full-instructions.md",
+          "path": "skills/implement-mainspec/references/full-instructions.md",
           "sha256": "db40b415b4bb06d7e8b6f3932f068df38d8a48655bab5f6fb47d6c9693556420"
         },
         {
-          "path": "skills/sdd/implement-mainspec/references/release-strategy.md",
+          "path": "skills/implement-mainspec/references/release-strategy.md",
           "sha256": "bdc3313c8910f6a210b3e46a57f17a5ae0f3849b021c4b9d1013702cda4fb30e"
         },
         {
-          "path": "skills/sdd/implement-mainspec/references/subagent-prompt-template.md",
+          "path": "skills/implement-mainspec/references/subagent-prompt-template.md",
           "sha256": "8b27e1433cb76898050ca2f7d745a593b27ce56681e6bff58c5f5a09d65a6a11"
         },
         {
-          "path": "skills/sdd/implement-mainspec/scripts/compute_tiers.py",
+          "path": "skills/implement-mainspec/scripts/compute_tiers.py",
           "sha256": "1e604b4a7a488cbd578147b0bafb341a866d0a155401a97632e157641d7dbc93"
         },
         {
-          "path": "skills/sdd/implement-mainspec/scripts/tests/test_tier_computation.py",
+          "path": "skills/implement-mainspec/scripts/tests/test_tier_computation.py",
           "sha256": "2c470f96b17161e2c73dc40a044846514835c951e64cfdaac0f88f44a0a16e71"
         }
       ]
     },
     {
       "name": "implement-slice",
-      "description": "Implements a single slice with Signal validation and unit tests. Agent-first \u2014 invoked by the slice-implementer subagent (under implement-mainspec). No human-in-the-loop; signal validation iterates up to a bounded `max_signal_iterations` (default 3) before reporting FAILURE.",
-      "sourcePath": "skills/sdd/implement-slice",
+      "description": "Implements a single slice with Signal validation and unit tests. Agent-first \u2014 invoked by the slice-implementer subagent (under implement-mainspec). No human-in-the-loop; signal validation iterates up to a bounded `max_signal_iterations` (default 3) before reporting FAILURE. Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.",
+      "sourcePath": "skills/implement-slice",
       "installPath": ".claude/skills/implement-slice",
-      "sha256": "1d2fcc681d6658747f02d766385993e849bc17248b94320ed1c04baa93d5d0cb",
+      "sha256": "7c57c7c091ee587e8e9f688b3a510ed6d18738b3b84164642f691deafdfe9946",
       "review": {
         "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+        "reviewedAt": "2026-07-20T23:57:16.782Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f6-666d-71ed-a961-2a19dcf99bf0",
+        "score": 79
       },
       "files": [
         {
-          "path": "skills/sdd/implement-slice/SKILL.md",
-          "sha256": "d609260506bbeb3a181fc694139835595bf1d4d36900ea999b79f71acf7d5f56"
+          "path": "skills/implement-slice/SKILL.md",
+          "sha256": "59e06774ed54a4cfbe4074aff3a3c3c6c7255420092fee28d3993a4e9c846a9f"
         },
         {
-          "path": "skills/sdd/implement-slice/references/full-instructions.md",
+          "path": "skills/implement-slice/references/full-instructions.md",
           "sha256": "80228f34ccf81f37e2ff8361fa3abea1908a06cf28a2c5d7abb9d2e85216f78e"
         }
       ]
     },
     {
-      "name": "spec-planning",
-      "description": "Reads a PRD (`prds/<feature>/prd.md`) plus its executable `run-prd-test.sh` (and any helper artifacts under `prds/<feature>/`), grounds them in codebase research, and produces `specs/<feature>/mainspec.md` plus dependency-ordered slices. Encodes the runner as a slice success criterion so implementation completion implies `./prds/<feature>/run-prd-test.sh` exits 0. Touches `specs/<feature>/.planning-done` as its final committed action. Agent-first \u2014 no human-in-the-loop.",
-      "sourcePath": "skills/sdd/spec-planning",
-      "installPath": ".claude/skills/spec-planning",
-      "sha256": "d077cb318b9a7c5b65281eb61528b9f35980a1be42d5a4df88a5fa998268817c",
+      "name": "intent",
+      "description": "Turn an open-ended idea into a PRD plus a runnable definition of done. Use when a developer wants to start a new feature, \"file a PRD\", \"spec out\" or \"scope\" an idea, think through what to build, or kick off the harness for a piece of work. Produces prds/<feature>/prd.md + an executable prds/<feature>/run-prd-test.sh on a prd/<author-slug>/<feature> branch. The one human-attentive skill in the chain.",
+      "sourcePath": "skills/intent",
+      "installPath": ".claude/skills/intent",
+      "sha256": "e50855f4e8f77ab09b413660f20f4fe3613c2eac9e5fe45882bd0db5dedd19de",
       "review": {
         "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+        "reviewedAt": "2026-07-20T23:57:43.795Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f6-cff2-70cb-8ee8-8f0b3b5c300a",
+        "score": 88
       },
       "files": [
         {
-          "path": "skills/sdd/spec-planning/SKILL.md",
-          "sha256": "e201beb8f98e423813132d31c06858984b5536f4e487f04e317f2c94566fcb48"
+          "path": "skills/intent/SKILL.md",
+          "sha256": "c382547e36bc01cf5093866a839e624c6cc2a9a1658b7b3c170bf6d0f16faa2e"
         },
         {
-          "path": "skills/sdd/spec-planning/references/experts.md",
+          "path": "skills/intent/references/elicitation.md",
+          "sha256": "4942d8260443563628ed65acf01b7151c03aee1a957135cb4419830b00be500f"
+        },
+        {
+          "path": "skills/intent/references/full-instructions.md",
+          "sha256": "6e7c05c14d035307b5d5c190a541440b3f64f33251ef72f60e5c131afb8820f6"
+        },
+        {
+          "path": "skills/intent/references/prd-template.md",
+          "sha256": "24583b7f422a6bdd5a769a477cf99879553e0bfbcba03f156b542731262be342"
+        },
+        {
+          "path": "skills/intent/references/right-reason.md",
+          "sha256": "93e7b3559bc4f0240d3b2b2b16d355247c04ede8be7d307f2fa1a65869ff9d7e"
+        },
+        {
+          "path": "skills/intent/references/runner-recipes.md",
+          "sha256": "5f36574e28e5b8c79f75afce35a13cc869722837bc2fb0be01ab022a94e3ac19"
+        }
+      ]
+    },
+    {
+      "name": "learn",
+      "description": "Update the project's long-term memory after a merge to main. Reads the merged diff and the current memory, then writes Expert shards, discovered invariants, candidate lints, and AGENTS.md pointers \u2014 all on a reviewable learn/<sha> PR. Use post-merge (the harness invokes it automatically) or with --rebuild to regenerate memory from scratch. Triggers - learn, expert-update, update memory, update expert, post-merge memory, self-improve (project)",
+      "sourcePath": "skills/learn",
+      "installPath": ".claude/skills/learn",
+      "sha256": "50d5e1813787245e2c3da1bccf13e01e03a019d0c1565c167a4c3abab615bc22",
+      "review": {
+        "status": "reviewed",
+        "reviewedAt": "2026-07-20T23:58:10.913Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f7-39e0-751d-ae64-5288d9f7476e",
+        "score": 94
+      },
+      "files": [
+        {
+          "path": "skills/learn/SKILL.md",
+          "sha256": "1cf8c96a14ee396fc5ab9b755438b15bc93e44d6793c04525b465ba8119124ee"
+        },
+        {
+          "path": "skills/learn/references/agents-md-guidance.md",
+          "sha256": "e6a5bf4e9a39c15f9e55f59411436972a3227c8e2fb9f2143cfe6716a6d53fca"
+        },
+        {
+          "path": "skills/learn/references/consensus.md",
+          "sha256": "3275d778b88c974ac73ef54cd4ceb67c25a317ab832a4479d89a3804cd394047"
+        },
+        {
+          "path": "skills/learn/references/expert-shards.md",
+          "sha256": "e16948b7508871f560cc615cb114f18f30a6b4c0974d8c44f334b8021bf43750"
+        },
+        {
+          "path": "skills/learn/references/full-instructions.md",
+          "sha256": "8019a6ddb0b1302e3ca2293cffa76b46bafd63d9e5192f21fb509ca4bf3254f2"
+        },
+        {
+          "path": "skills/learn/references/invariant-discovery.md",
+          "sha256": "00387ec2f846f58d353ba52735ae69402413dda3c29812958f2e900d9f6b90ec"
+        },
+        {
+          "path": "skills/learn/references/routing-rules.md",
+          "sha256": "1e25441fe6b869670ae87e538a2c62eb441b76ccaf2204f276684c44cbe00217"
+        },
+        {
+          "path": "skills/learn/scripts/check-agents-md.sh",
+          "sha256": "46fc459fc2460d4652574e2e73da2b66912241f77d589ad535610de52d738442"
+        }
+      ]
+    },
+    {
+      "name": "spec-planning",
+      "description": "Reads a PRD (`prds/<feature>/prd.md`) plus its executable `run-prd-test.sh` (and any helper artifacts under `prds/<feature>/`), grounds them in codebase research, and produces `specs/<feature>/mainspec.md` plus dependency-ordered slices. Encodes the runner as a slice success criterion so implementation completion implies `./prds/<feature>/run-prd-test.sh` exits 0. Touches `specs/<feature>/.planning-done` as its final committed action. Agent-first \u2014 no human-in-the-loop. Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.",
+      "sourcePath": "skills/spec-planning",
+      "installPath": ".claude/skills/spec-planning",
+      "sha256": "df53f6db58e3e0b813eabe4ee90d11f2846ef0e61748956de580fd3185a33f49",
+      "review": {
+        "status": "reviewed",
+        "reviewedAt": "2026-07-20T23:58:37.798Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f7-a2e5-7364-bc0b-30e82751a86b",
+        "score": 77
+      },
+      "files": [
+        {
+          "path": "skills/spec-planning/SKILL.md",
+          "sha256": "0797ca53a250358aa3d673398c73b444d8927a178309323c9b8bac15b50877d4"
+        },
+        {
+          "path": "skills/spec-planning/references/experts.md",
           "sha256": "5ee0c707e7dec68d29ec672dc9224137d4f41357f616f7c45dc7200d9b3ff0b1"
         },
         {
-          "path": "skills/sdd/spec-planning/references/full-instructions.md",
+          "path": "skills/spec-planning/references/full-instructions.md",
           "sha256": "f53cd6ef0f85e1ac70f7723f74ac2948951a86f33dc91548ee95bfbd59229fc0"
         },
         {
-          "path": "skills/sdd/spec-planning/references/signals.md",
+          "path": "skills/spec-planning/references/signals.md",
           "sha256": "d6e1b3e2b15b4a218086287a65b42f8015a8a2acc674b8204828bb70b5928c49"
         }
       ]
     },
     {
       "name": "spec-validate",
-      "description": "Validates a mainspec and its slices via 3-subagent consensus plus expert review, then *applies* impactful fixes directly to the spec files. No human-in-the-loop summary or approval \u2014 agent-first. Touches `specs/<feature>/.validated` as its final committed action.",
-      "sourcePath": "skills/sdd/spec-validate",
+      "description": "Validates a mainspec and its slices via 3-subagent consensus plus expert review, then *applies* impactful fixes directly to the spec files. No human-in-the-loop summary or approval \u2014 agent-first. Touches `specs/<feature>/.validated` as its final committed action. Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.",
+      "sourcePath": "skills/spec-validate",
       "installPath": ".claude/skills/spec-validate",
-      "sha256": "75b37dac042b9b4100be1fbfd171731bd2a8f1ffa3f974ecb8a6a6818aaa8628",
+      "sha256": "a8a99b56b8839e9b2c4c2467894b7a77cd078f3b65fc59cfacf5b0f24afd8563",
       "review": {
         "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
-        "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
+        "reviewedAt": "2026-07-20T23:59:04.904Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f8-0cc7-76e3-916c-ab19695632e4",
+        "score": 83
       },
       "files": [
         {
-          "path": "skills/sdd/spec-validate/SKILL.md",
-          "sha256": "141286a9999fbce46ad99a59256579d6b9847ad371434d2331dae95d3f989be6"
+          "path": "skills/spec-validate/SKILL.md",
+          "sha256": "d67f0ac0fd85bb6b56cf73f0afd1689514706b67987b70b9269e70b2e2198385"
         },
         {
-          "path": "skills/sdd/spec-validate/references/full-instructions.md",
+          "path": "skills/spec-validate/references/full-instructions.md",
           "sha256": "764ec0a3e6dadbc5e78a3a3fdc428d98856873b82a57a360fe1737db90830a36"
+        }
+      ]
+    },
+    {
+      "name": "wiki-init",
+      "description": "One-time, guided setup of a standalone LLM-maintained wiki \u2014 a Karpathy \"LLM Wiki\" style knowledge base for a problem domain and your general architecture best practices. Scaffolds an external wiki vault (its own git repo) with /ingest, /query, /lint commands and a conventions doc. Use when a developer wants to start, create, bootstrap, or initialize a wiki / second-brain / knowledge base to understand a problem space before building. The front of the Human Loop's Understanding phase.",
+      "sourcePath": "skills/wiki-init",
+      "installPath": ".claude/skills/wiki-init",
+      "sha256": "cf1ea8dfe5109a01763578c0c8416c9dfc2bf8dcd0e7c38e3fec0ed546e36412",
+      "review": {
+        "status": "reviewed",
+        "reviewedAt": "2026-07-20T23:59:31.914Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f81f8-764a-7289-9e04-3ec9557c3732",
+        "score": 88
+      },
+      "files": [
+        {
+          "path": "skills/wiki-init/SKILL.md",
+          "sha256": "38f63eb8e8c46fc6caa874f27e69aa6056d7748cca1eee2cb6e6d3eac4747478"
+        },
+        {
+          "path": "skills/wiki-init/assets/MOC.md.template",
+          "sha256": "571fc15bf0ca3c1c06ec0ff2a409ce1f9f7c1c0eb66066bff49345866b8127f5"
+        },
+        {
+          "path": "skills/wiki-init/assets/README.md.template",
+          "sha256": "e11385fe28109141e091f8d13ebb69e45b69b024e4e5148ae770a549d8cb0073"
+        },
+        {
+          "path": "skills/wiki-init/assets/WIKI-CONVENTIONS.md.template",
+          "sha256": "a2f85b55f4729fa27953926462b10b6b73c9a3b47c9d5e0723d44a3e7d92c5c2"
+        },
+        {
+          "path": "skills/wiki-init/assets/commands/ingest.md",
+          "sha256": "df10be6fffc17a10dbf337a604e5d62a43fe87a1ad9777b57088aeb67cbbaacb"
+        },
+        {
+          "path": "skills/wiki-init/assets/commands/lint.md",
+          "sha256": "42c0b412b79ee1b49080b3f3a6416eaef17b579587ec8378a0c0784edc3764fc"
+        },
+        {
+          "path": "skills/wiki-init/assets/commands/query.md",
+          "sha256": "42737b15801f2b48ea475fa942b4b03baf1fc9cadeb9eedf2d61545c7b598b2f"
+        },
+        {
+          "path": "skills/wiki-init/assets/gitignore.snippet",
+          "sha256": "273259f07ab6703f0c75ac9cf2cfe8ee48d771105c7743de7bdbd87728d47620"
+        },
+        {
+          "path": "skills/wiki-init/references/domain-discovery.md",
+          "sha256": "7109b0002b99c91e339e20ebcca8346b52334799c990109e6833737df835b746"
+        },
+        {
+          "path": "skills/wiki-init/references/full-instructions.md",
+          "sha256": "d199810b2b9c2ed0fbcd8ab9f9de8b293cb40650ab3262b121e410079aa58ed0"
+        },
+        {
+          "path": "skills/wiki-init/references/hardening-lessons.md",
+          "sha256": "71bb5994070d1a27128a228d5eafe4e48f94cd989c3fa1cf75273f41d3632234"
+        },
+        {
+          "path": "skills/wiki-init/references/llm-wiki-pattern.md",
+          "sha256": "679d12796a14a5c4b2afea4e419b8286d36920a8c523f14c984c5a04967c0fec"
         }
       ]
     }
@@ -560,9 +587,11 @@
       "sha256": "4a7882271123e99ce61b8401060efe54e0e85c4a06341cfe3fe8688e00106dc4",
       "review": {
         "status": "reviewed",
-        "reviewedAt": "2026-07-20T21:01:27Z",
+        "reviewedAt": "2026-07-20T23:59:31.914Z",
         "reviewer": "context-specs-maintainers",
-        "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this file's sha256 changes."
+        "notes": "Claude subagent support artifact; reviewed as part of Context Specs registry packaging.",
+        "reviewRunId": null,
+        "score": null
       }
     }
   ]

@@ -1,9 +1,9 @@
 ---
-name: implement-mainspec
-description: Implements a mainspec end-to-end by auto-detecting mode. Sequential mode (≤3 slices) commits slices in order on the current `feature/<feature>` branch. Parallel mode (>3 slices) uses dependency-aware tiered execution with per-slice worktrees, branches, PRs, and auto-merge into the feature branch. Agent-first — invoked headless by the harness dispatcher with the feature slug as its single argument. No human-in-the-loop, no approval gates.
+name: expert-sdd-creator
+description: Meta skill for creating new SDD experts from domain documentation. Provide a markdown file path with domain knowledge + optional steering context. Automatically synthesizes references, generates signal scripts, validates, and registers in experts.md/signals.md catalogs. Single-prompt creation with follow-up tweaks. Triggers - create expert, new expert, make expert, expert for, domain expert, add expert (project). Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.
 ---
 
-# implement-mainspec
+# expert-sdd-creator
 
 Follow this compact workflow. Read `references/full-instructions.md` before making changes or running project commands.
 

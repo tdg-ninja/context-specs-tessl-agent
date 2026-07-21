@@ -1,9 +1,0 @@
-{
-  "schemaVersion": 1,
-  "artifact": "skills/harness/learn",
-  "sha256": "7e6d91dd85a19c2a144c108bed9e7dbbbc9b50e6158aaeb00228ee018b3fcb4d",
-  "status": "reviewed",
-  "reviewer": "context-specs-maintainers",
-  "reviewedAt": "2026-07-20T21:01:27Z",
-  "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
-}

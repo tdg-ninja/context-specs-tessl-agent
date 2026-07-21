@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "artifact": "skills/harness-init",
+  "sha256": "2e468ce8e31cc05b01cc761bb87e13ef48d277a809f3a7898aa94cfbde5b3f71",
+  "status": "reviewed",
+  "reviewer": "tessl/default-skill-review@0.1.0",
+  "reviewRunId": "019f81f5-9402-746e-b2ce-484984b403e9",
+  "score": 94,
+  "reviewedAt": "2026-07-20T23:56:22.915Z",
+  "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish."
+}

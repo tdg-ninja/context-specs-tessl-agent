@@ -10,7 +10,7 @@ if [ -f "$SCRIPT_DIR/bin/context-specs.py" ]; then
 fi
 
 if command -v context-specs >/dev/null 2>&1; then
-  exec context-specs install --source "$REPO_URL" --ref "$REF" "$@"
+  exec context-specs install "$@"
 fi
 
 TEMP_DIR=""
@@ -23,4 +23,4 @@ trap cleanup EXIT
 
 TEMP_DIR="$(mktemp -d)"
 git clone --depth 1 --branch "$REF" --quiet "$REPO_URL" "$TEMP_DIR"
-python3 "$TEMP_DIR/bin/context-specs.py" install --source "$TEMP_DIR" "$@"
+python3 "$TEMP_DIR/bin/context-specs.py" install "$@"

@@ -42,19 +42,19 @@ whole project that builds itself, then the way you work day to day.
 ![Experts](./experts.png)
 
 You create **domain experts** from your own documentation with
-[`/expert-sdd-creator`](./skills/sdd/expert-sdd-creator/SKILL.md) —
+[`/expert-sdd-creator`](./skills/expert-sdd-creator/SKILL.md) —
 define the knowledge once, and it flows automatically through every phase:
 
-1. **Spec Planning** ([`/spec-planning`](./skills/sdd/spec-planning/SKILL.md)) —
+1. **Spec Planning** ([`/spec-planning`](./skills/spec-planning/SKILL.md)) —
    research the codebase, pull in matching experts, and write the plan to disk as
    a **mainspec** plus temporally-ordered **slices**. Planning lives *outside* the
    context window, so it can't decay or compact away; slicing feeds the
    implementer only the piece it's working on.
-2. **Spec Validation** ([`/spec-validate`](./skills/sdd/spec-validate/SKILL.md)) —
+2. **Spec Validation** ([`/spec-validate`](./skills/spec-validate/SKILL.md)) —
    3+ independent Opus reviewers plus expert review, with consensus scoring
    (3/3 = very high, 2/3 = high) turning agreement into a confidence signal.
    Impactful findings are applied in place.
-3. **Implementation** ([`/implement-mainspec`](./skills/sdd/implement-mainspec/SKILL.md)) —
+3. **Implementation** ([`/implement-mainspec`](./skills/implement-mainspec/SKILL.md)) —
    slices implemented in dependency order, sequential or auto-parallelized across
    git worktrees, each gated by **Signal** (the runtime feedback loop, below).
 
@@ -80,7 +80,7 @@ default; experts can define richer ones.
 
 The whole promise, in one sequence:
 
-> Describe a feature to [`/intent`](./skills/human-loop/intent/SKILL.md) and confirm
+> Describe a feature to [`/intent`](./skills/intent/SKILL.md) and confirm
 > it. Walk away. The project plans the feature, validates the plan, implements
 > it, runs its checks, opens a pull request, answers the reviewer — and hands you
 > back a PR that's ready to merge.
@@ -108,14 +108,14 @@ step genuinely can't make progress, the harness stops and hands you a
 **diagnosis-first** report rather than faking success.
 
 **It also remembers.** When code lands on `main`, the harness updates its own
-long-term memory: [`/learn`](./skills/harness/learn/SKILL.md) reads the
+long-term memory: [`/learn`](./skills/learn/SKILL.md) reads the
 merged diff and routes what's worth keeping into the Expert, the `AGENTS.md` map,
 or a custom lint the agent can't ship past — so the next feature starts knowing
 what the last one taught. One write path, ground truth only, behind a human
 merge.
 
 Setting all this up is itself a guided skill:
-[`/harness-init`](./skills/harness/harness-init/SKILL.md).
+[`/harness-init`](./skills/harness-init/SKILL.md).
 
 → [Chapter 3 — The agent harness](./docs/3-the-agent-harness.md) ·
 [Chapter 4 — Continuous improvement](./docs/4-continuous-improvement.md)
@@ -138,13 +138,13 @@ Understanding ──▶ Intent ──▶ [ the harness builds ] ──▶ Evalua
                                                         /evaluate-sessions
 ```
 
-- **Understanding** ([`/wiki-init`](./skills/human-loop/wiki-init/SKILL.md)) —
+- **Understanding** ([`/wiki-init`](./skills/wiki-init/SKILL.md)) —
   a Karpathy "LLM Wiki" that builds *your* model of the problem space, so you
   arrive at Intent with sharper questions.
-- **Intent** ([`/intent`](./skills/human-loop/intent/SKILL.md)) — turn that
+- **Intent** ([`/intent`](./skills/intent/SKILL.md)) — turn that
   understanding into a PRD plus a runnable definition of done.
-- **Evaluate** ([`/evaluate-pr`](./skills/human-loop/evaluate-pr/SKILL.md) +
-  [`/evaluate-sessions`](./skills/human-loop/evaluate-sessions/SKILL.md)) —
+- **Evaluate** ([`/evaluate-pr`](./skills/evaluate-pr/SKILL.md) +
+  [`/evaluate-sessions`](./skills/evaluate-sessions/SKILL.md)) —
   walk the change to build real understanding, *and* read the build trail to find
   where the project's context served the agents or failed them. The flywheel:
   *observe a trace → capture it as an eval → fix the context → it persists as a
@@ -177,7 +177,7 @@ next one.
 ## Getting started
 
 **Set it up once.** [Install the skills](#installation), then run
-[`/harness-init`](./skills/harness/harness-init/SKILL.md) — a guided setup that
+[`/harness-init`](./skills/harness-init/SKILL.md) — a guided setup that
 builds your project's custom harness and provisions its worktrees. It runs as
 **two independent loops, each in its own long-lived session.** Start them:
 
@@ -189,7 +189,7 @@ builds your project's custom harness and provisions its worktrees. It runs as
 /loop 10m /learn-loop
 ```
 
-*(Optionally run [`/wiki-init`](./skills/human-loop/wiki-init/SKILL.md) first to
+*(Optionally run [`/wiki-init`](./skills/wiki-init/SKILL.md) first to
 build your own understanding of the problem space before you write intent.)*
 
 With both loops running, you live in a three-beat cycle: you express intent, the
@@ -237,17 +237,13 @@ improves the context that feeds the next round. That's the cycle you live in.
 
 ## Installation
 
-Install the reviewed Context Specs package from the project you want to equip:
+Install the private reviewed Tessl registry package from the project you want to equip:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/capitalone/context-specs/main/install-agents.sh | bash
+tessl install cap1-context-specs/context-specs@0.1.0 --agent claude-code
 ```
 
-This installs skills into `.claude/skills/`, subagents into `.claude/agents/`, and
-writes `.context-specs/manifest.json` as the lockfile for the reviewed artifact
-digests you received.
-
-If you installed the CLI package, use it directly:
+If you want Claude Code compatibility files and a local lockfile, use the wrapper:
 
 ```bash
 context-specs install
@@ -255,9 +251,10 @@ context-specs update
 context-specs verify
 ```
 
-By default the CLI installs only artifacts whose current SHA-256 digest has a
-matching review record in the catalog. Use `--allow-unreviewed` only while testing
-local changes.
+The wrapper resolves `cap1-context-specs/context-specs@0.1.0` from the Tessl registry,
+then mirrors the skills into `.claude/skills/`, copies the Claude subagent into
+`.claude/agents/`, and writes `.context-specs/manifest.json` for drift detection.
+Use `--source <path>` only while testing local changes.
 
 ---
 

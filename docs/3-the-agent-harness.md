@@ -4,7 +4,7 @@
 
 Here is the whole promise of this chapter in one sequence:
 
-> You describe a feature to [`/intent`](../skills/human-loop/intent/SKILL.md) and
+> You describe a feature to [`/intent`](../skills/intent/SKILL.md) and
 > confirm it. Then you walk away. The project plans the feature, validates the
 > plan, implements it, runs its checks, opens a pull request, answers the
 > reviewer's comments — and hands you back a PR that's ready to merge. You come
@@ -46,7 +46,7 @@ below.
 ### `/intent` — the one place a human starts
 
 The loop begins with the single human-attentive skill in the chain.
-[`/intent`](../skills/human-loop/intent/SKILL.md) turns an open-ended idea into two
+[`/intent`](../skills/intent/SKILL.md) turns an open-ended idea into two
 coupled artifacts:
 
 - `prds/<feature>/prd.md` — the prose: **why** this exists and **what** "done"
@@ -73,7 +73,7 @@ state of every feature is observable from two things: the files on disk and the
 branches in git.
 
 A small bash script — the **dispatcher**
-([`poll-and-dispatch.sh`](../skills/harness/harness-init/assets/poll-and-dispatch.sh))
+([`poll-and-dispatch.sh`](../skills/harness-init/assets/poll-and-dispatch.sh))
 — wakes up periodically, reads that state fresh, and decides the single next step
 for each active feature. Its core is an `if/elif` chain: *planning output absent?
 run planning. Present but validation absent? run validate.* The chain **is** the
@@ -181,7 +181,7 @@ session and run `/loop 5m /poll-and-dispatch`. That's it — the outer loop is a
 session you already have open. When a team outgrows local laptops, they move the
 *trigger* to a server and keep everything else. It's an upgrade path, not a
 rewrite. (Setting all of this up is itself a guided skill —
-[`/harness-init`](../skills/harness/harness-init/SKILL.md) — which stands
+[`/harness-init`](../skills/harness-init/SKILL.md) — which stands
 up the dispatcher, the config, the verification gate, and the worktree
 provisioning, explaining each piece as it goes.)
 

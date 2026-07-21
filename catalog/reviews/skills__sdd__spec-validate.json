@@ -1,9 +1,0 @@
-{
-  "schemaVersion": 1,
-  "artifact": "skills/sdd/spec-validate",
-  "sha256": "75b37dac042b9b4100be1fbfd171731bd2a8f1ffa3f974ecb8a6a6818aaa8628",
-  "status": "reviewed",
-  "reviewer": "context-specs-maintainers",
-  "reviewedAt": "2026-07-20T21:01:27Z",
-  "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
-}

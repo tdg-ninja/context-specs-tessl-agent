@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "artifact": "skills/learn",
+  "sha256": "50d5e1813787245e2c3da1bccf13e01e03a019d0c1565c167a4c3abab615bc22",
+  "status": "reviewed",
+  "reviewer": "tessl/default-skill-review@0.1.0",
+  "reviewRunId": "019f81f7-39e0-751d-ae64-5288d9f7476e",
+  "score": 94,
+  "reviewedAt": "2026-07-20T23:58:10.913Z",
+  "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish."
+}

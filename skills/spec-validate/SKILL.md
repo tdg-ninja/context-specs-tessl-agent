@@ -1,9 +1,9 @@
 ---
-name: expert-sdd-creator
-description: Meta skill for creating new SDD experts from domain documentation. Provide a markdown file path with domain knowledge + optional steering context. Automatically synthesizes references, generates signal scripts, validates, and registers in experts.md/signals.md catalogs. Single-prompt creation with follow-up tweaks. Triggers - create expert, new expert, make expert, expert for, domain expert, add expert (project)
+name: spec-validate
+description: Validates a mainspec and its slices via 3-subagent consensus plus expert review, then *applies* impactful fixes directly to the spec files. No human-in-the-loop summary or approval — agent-first. Touches `specs/<feature>/.validated` as its final committed action. Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.
 ---
 
-# expert-sdd-creator
+# spec-validate
 
 Follow this compact workflow. Read `references/full-instructions.md` before making changes or running project commands.
 

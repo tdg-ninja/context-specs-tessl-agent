@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "artifact": "skills/expert-sdd-creator",
+  "sha256": "af6f76d43c135bc06a5eba6c05f9e3861ab2ea8ec854860de071f7dc581e4b10",
+  "status": "reviewed",
+  "reviewer": "tessl/default-skill-review@0.1.0",
+  "reviewRunId": "019f81f4-c03a-727c-9ae8-32ce98efae7d",
+  "score": 94,
+  "reviewedAt": "2026-07-20T23:55:28.699Z",
+  "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish."
+}

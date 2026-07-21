@@ -51,7 +51,7 @@ Before you can express good intent, you need a real model of the problem space:
 the domain, the prior art, the constraints, the trade-offs. The Understanding
 phase builds *your* model, not the agent's.
 
-[`/wiki-init`](../skills/human-loop/wiki-init/SKILL.md) stands up a
+[`/wiki-init`](../skills/wiki-init/SKILL.md) stands up a
 standalone, LLM-maintained knowledge base in the shape of **Karpathy's "LLM
 Wiki"**: rather than retrieving and re-synthesizing on every question, you
 synthesize **once, at ingest time**, into durable, cross-linked pages that
@@ -74,7 +74,7 @@ the trade-offs — so the feature you ask for is the right one.
 ## Intent — `/intent`
 
 This is the front bookend, and you met it in Chapter 3 as the harness's entry
-point. From the human loop's side, [`/intent`](../skills/human-loop/intent/SKILL.md)
+point. From the human loop's side, [`/intent`](../skills/intent/SKILL.md)
 is where understanding becomes a buildable thing. Its discipline is worth
 restating because it's where your thinking does its work:
 
@@ -101,7 +101,7 @@ are two skills, because there are two things to evaluate.
 
 ### `/evaluate-pr` — evaluate *what was built*
 
-[`/evaluate-pr`](../skills/human-loop/evaluate-pr/SKILL.md) produces two
+[`/evaluate-pr`](../skills/evaluate-pr/SKILL.md) produces two
 outcomes. The tangible one: merge, fix-and-push, or close. The intangible one —
 **the one that matters more** — is *you* understanding the change deeply enough
 to defend every scenario and design decision in it.
@@ -122,7 +122,7 @@ never hand work back to the loop. You are the last mile.
 
 ### `/evaluate-sessions` — evaluate *how it was built*
 
-[`/evaluate-sessions`](../skills/human-loop/evaluate-sessions/SKILL.md) is
+[`/evaluate-sessions`](../skills/evaluate-sessions/SKILL.md) is
 where the human loop reaches back and improves the harness itself. The harness
 posts the full `claude -p` build trail on every PR — the sessions the agents ran.
 This skill reads that trail *with you* to find where the project's context served

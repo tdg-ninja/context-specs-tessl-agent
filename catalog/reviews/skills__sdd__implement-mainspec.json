@@ -1,9 +1,0 @@
-{
-  "schemaVersion": 1,
-  "artifact": "skills/sdd/implement-mainspec",
-  "sha256": "4448084dc2302a0fccf147eac7020834f5c53a7605335ca13889a51937cf7f48",
-  "status": "reviewed",
-  "reviewer": "context-specs-maintainers",
-  "reviewedAt": "2026-07-20T21:01:27Z",
-  "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
-}

@@ -1,9 +1,0 @@
-{
-  "schemaVersion": 1,
-  "artifact": "skills/sdd/implement-slice",
-  "sha256": "1d2fcc681d6658747f02d766385993e849bc17248b94320ed1c04baa93d5d0cb",
-  "status": "reviewed",
-  "reviewer": "context-specs-maintainers",
-  "reviewedAt": "2026-07-20T21:01:27Z",
-  "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
-}

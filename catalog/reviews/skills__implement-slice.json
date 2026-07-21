@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "artifact": "skills/implement-slice",
+  "sha256": "7c57c7c091ee587e8e9f688b3a510ed6d18738b3b84164642f691deafdfe9946",
+  "status": "reviewed",
+  "reviewer": "tessl/default-skill-review@0.1.0",
+  "reviewRunId": "019f81f6-666d-71ed-a961-2a19dcf99bf0",
+  "score": 79,
+  "reviewedAt": "2026-07-20T23:57:16.782Z",
+  "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish."
+}

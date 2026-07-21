@@ -1,9 +1,0 @@
-{
-  "schemaVersion": 1,
-  "artifact": "skills/human-loop/wiki-init",
-  "sha256": "900be0463e592573f1b4f36331929e323e7b463892c92ec2cd7d36062314e025",
-  "status": "reviewed",
-  "reviewer": "context-specs-maintainers",
-  "reviewedAt": "2026-07-20T21:01:27Z",
-  "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
-}

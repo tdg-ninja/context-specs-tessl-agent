@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "artifact": "skills/fix-local-checks",
+  "sha256": "f93a445b9295ae9c0a217fd0a5dd0af78f23018929b5765ec733b67ba91987ea",
+  "status": "reviewed",
+  "reviewer": "tessl/default-skill-review@0.1.0",
+  "reviewRunId": "019f81f5-2a17-751e-a654-5bd72a351f03",
+  "score": 88,
+  "reviewedAt": "2026-07-20T23:55:55.799Z",
+  "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish."
+}

@@ -367,4 +367,4 @@ Each walkthrough names the failure, traces what happens tick by tick, and points
 
 - [The documentation story](./README.md) — the narrative these properties underpin, starting from context engineering.
 - [Chapter 3 — The agent harness](./3-the-agent-harness.md) — the intuition for why the harness is safe; this document is its proof.
-- [`poll-and-dispatch.sh`](../skills/harness/harness-init/assets/poll-and-dispatch.sh) — the dispatcher: the canonical realization of these invariants in code.
+- [`poll-and-dispatch.sh`](../skills/harness-init/assets/poll-and-dispatch.sh) — the dispatcher: the canonical realization of these invariants in code.

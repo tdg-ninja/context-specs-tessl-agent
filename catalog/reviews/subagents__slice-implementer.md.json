@@ -4,6 +4,6 @@
   "sha256": "4a7882271123e99ce61b8401060efe54e0e85c4a06341cfe3fe8688e00106dc4",
   "status": "reviewed",
   "reviewer": "context-specs-maintainers",
-  "reviewedAt": "2026-07-20T21:01:27Z",
-  "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this file's sha256 changes."
+  "reviewedAt": "2026-07-20T23:59:31.914Z",
+  "notes": "Claude subagent support artifact; reviewed as part of Context Specs registry packaging."
 }

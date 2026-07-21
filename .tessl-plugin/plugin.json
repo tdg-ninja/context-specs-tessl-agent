@@ -1,0 +1,8 @@
+{
+  "name": "cap1-context-specs/context-specs",
+  "version": "0.1.0",
+  "description": "Context Specs agent harness skills for spec-driven development, autonomous implementation, and human evaluation loops.",
+  "private": true,
+  "repository": "https://github.com/tdg-ninja/context-specs-tessl-agent",
+  "license": "Apache-2.0"
+}

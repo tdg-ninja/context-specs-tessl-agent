@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "artifact": "skills/implement-mainspec",
+  "sha256": "103ecbc5eda35b6487f4342dfa69cc949020e42f007c9075c3728425fa8ffc5d",
+  "status": "reviewed",
+  "reviewer": "tessl/default-skill-review@0.1.0",
+  "reviewRunId": "019f81f5-fcf8-7157-b927-1fb53eda109a",
+  "score": 74,
+  "reviewedAt": "2026-07-20T23:56:49.785Z",
+  "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish."
+}

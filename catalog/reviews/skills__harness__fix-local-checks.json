@@ -1,9 +1,0 @@
-{
-  "schemaVersion": 1,
-  "artifact": "skills/harness/fix-local-checks",
-  "sha256": "2b685dbf7ef8d378f4972c2ddcfafbec745f5ea1652fa4de8312a3fa17174ce9",
-  "status": "reviewed",
-  "reviewer": "context-specs-maintainers",
-  "reviewedAt": "2026-07-20T21:01:27Z",
-  "notes": "Reviewed for distribution in the Context Specs harness package. Re-review required when this artifact digest changes."
-}

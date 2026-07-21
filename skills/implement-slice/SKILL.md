@@ -1,9 +1,9 @@
 ---
-name: spec-validate
-description: Validates a mainspec and its slices via 3-subagent consensus plus expert review, then *applies* impactful fixes directly to the spec files. No human-in-the-loop summary or approval — agent-first. Touches `specs/<feature>/.validated` as its final committed action.
+name: implement-slice
+description: Implements a single slice with Signal validation and unit tests. Agent-first — invoked by the slice-implementer subagent (under implement-mainspec). No human-in-the-loop; signal validation iterates up to a bounded `max_signal_iterations` (default 3) before reporting FAILURE. Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.
 ---
 
-# spec-validate
+# implement-slice
 
 Follow this compact workflow. Read `references/full-instructions.md` before making changes or running project commands.
 

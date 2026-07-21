@@ -1,9 +1,9 @@
 ---
-name: address-feedback
-description: Respond to an automated reviewer's findings on the current feature PR — a narrow, headless responder. Triages each reviewer finding into Clear / Ambiguous / Complex / Out-of-PRD-Scope, then acts — fixes the cause and pushes (diff-only) for Clear, posts one in-thread reply for the rest. Skips findings it already handled. Invoked headless by the dispatcher's feedback gate; the dispatcher owns the round counter and the STUCK escalation. Triggers - address-feedback, address review comments, respond to PR review, handle reviewer findings, PR feedback loop (project)
+name: implement-mainspec
+description: Implements a mainspec end-to-end by auto-detecting mode. Sequential mode (≤3 slices) commits slices in order on the current `feature/<feature>` branch. Parallel mode (>3 slices) uses dependency-aware tiered execution with per-slice worktrees, branches, PRs, and auto-merge into the feature branch. Agent-first — invoked headless by the harness dispatcher with the feature slug as its single argument. No human-in-the-loop, no approval gates. Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.
 ---
 
-# address-feedback
+# implement-mainspec
 
 Follow this compact workflow. Read `references/full-instructions.md` before making changes or running project commands.
 

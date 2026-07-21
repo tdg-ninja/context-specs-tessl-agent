@@ -1,6 +1,6 @@
 ---
 name: fix-local-checks
-description: Patch the code so `scripts/local-checks.sh` passes, after /implement-mainspec — a narrow post-implement polish specialist. Reads the (remediation-rich) check failures, fixes the underlying cause, never silences a check, re-verifies, and commits. Invoked headless by the dispatcher's two-strike local-checks gate; the dispatcher owns the retry counter. Triggers - fix-local-checks, fix lint, fix local checks, fix typecheck, make checks pass, post-implement polish (project)
+description: Patch the code so `scripts/local-checks.sh` passes, after /implement-mainspec — a narrow post-implement polish specialist. Reads the (remediation-rich) check failures, fixes the underlying cause, never silences a check, re-verifies, and commits. Invoked headless by the dispatcher's two-strike local-checks gate; the dispatcher owns the retry counter. Triggers - fix-local-checks, fix lint, fix local checks, fix typecheck, make checks pass, post-implement polish (project). Use when invoking this Context Specs harness step by name or when the dispatcher reaches this stage of the spec-driven development workflow.
 ---
 
 # fix-local-checks
