@@ -237,13 +237,19 @@ improves the context that feeds the next round. That's the cycle you live in.
 
 ## Installation
 
-Install the private reviewed Tessl registry package from the project you want to equip:
+### Which install path should I use?
+
+Use the Tessl install path when you want the private reviewed Tessl registry
+plugin installed directly into an agent-enabled project:
 
 ```bash
 tessl install cap1-context-specs/context-specs@0.1.0 --agent claude-code
 ```
 
-If you want Claude Code compatibility files and a local lockfile, use the wrapper:
+`tessl install` installs the private Tessl registry plugin.
+
+Use the Context Specs compatibility CLI when the target project also needs local
+Claude Code compatibility files and drift detection:
 
 ```bash
 context-specs install
@@ -251,10 +257,12 @@ context-specs update
 context-specs verify
 ```
 
-The wrapper resolves `cap1-context-specs/context-specs@0.1.0` from the Tessl registry,
-then mirrors the skills into `.claude/skills/`, copies the Claude subagent into
-`.claude/agents/`, and writes `.context-specs/manifest.json` for drift detection.
-Use `--source <path>` only while testing local changes.
+`context-specs install` resolves the same
+`cap1-context-specs/context-specs@0.1.0` Tessl registry plugin, then mirrors the
+skills into `.claude/skills/`, copies the Claude subagent into
+`.claude/agents/`, and writes `.context-specs/manifest.json`. Those mirrored
+files and the manifest are compatibility/local glue around the Tessl-distributed
+plugin. Use `--source <path>` only while testing local changes.
 
 ---
 
