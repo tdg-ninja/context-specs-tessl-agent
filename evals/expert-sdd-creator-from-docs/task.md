@@ -1,0 +1,1 @@
+A team provides markdown documentation for its authentication architecture and asks for an SDD expert so future specs use the right auth patterns. Describe the expected `expert-sdd-creator` workflow and artifacts.

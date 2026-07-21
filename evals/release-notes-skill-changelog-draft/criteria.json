@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the release-notes skill behavior for drafting changelogs from merged PRs or a git range.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "gathers_source_changes",
+      "description": "Explains that the skill should gather merged PRs, commits, or an explicit git range before drafting notes.",
+      "max_score": 3
+    },
+    {
+      "name": "uses_required_sections",
+      "description": "Includes or preserves sections for Highlights, Changes, Fixes, Internal / Harness, and Upgrade notes.",
+      "max_score": 4
+    },
+    {
+      "name": "classifies_harness_work",
+      "description": "Correctly places Dark Factory, verifier, workflow, registry, eval, or skill-distribution changes under internal/harness content rather than user-facing product claims.",
+      "max_score": 3
+    },
+    {
+      "name": "avoids_unsupported_claims",
+      "description": "States that release notes should be evidence-backed and should not invent features, fixes, or upgrade guidance not supported by the PRs or git range.",
+      "max_score": 3
+    },
+    {
+      "name": "flags_upgrade_notes",
+      "description": "Mentions that breaking changes, new required secrets, workflow changes, registry version changes, or install/verification changes should be called out as upgrade notes when present.",
+      "max_score": 3
+    }
+  ]
+}

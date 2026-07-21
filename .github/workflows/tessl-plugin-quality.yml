@@ -9,6 +9,7 @@ on:
       - 'catalog/**'
       - 'bin/context-specs.py'
       - 'scripts/**'
+      - 'evals/**'
       - '.github/workflows/tessl-plugin-quality.yml'
   workflow_dispatch:
     inputs:
@@ -27,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: write
     env:
       TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
       TESSL_WORKSPACE: cap1-context-specs
@@ -52,10 +54,53 @@ jobs:
           BASE_REF: origin/${{ github.base_ref || 'main' }}
         run: scripts/run-tessl-review-for-changed-skills.sh
 
+      - name: Tessl summarize skill quality scores
+        if: always()
+        env:
+          BASE_REF: origin/${{ github.base_ref || 'main' }}
+        run: |
+          python3 scripts/summarize-skill-quality.py \
+            --base-ref "$BASE_REF" \
+            --min-score "$MIN_REVIEW_SCORE" \
+            --out .tessl/review-results/skill-quality-summary.md
+
+      - name: Tessl publish skill quality score comment
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN || secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          python3 scripts/upsert-pr-comment.py \
+            --repo "$REPO" \
+            --pr "$PR_NUMBER" \
+            --body-file .tessl/review-results/skill-quality-summary.md \
+            --marker '<!-- tessl-skill-quality -->'
+
+      - name: Tessl security review new skills
+        env:
+          BASE_REF: origin/${{ github.base_ref || 'main' }}
+          SKILL_SCOPE: new
+          SECURITY_FAIL_ON: high
+        run: scripts/run-skill-security-reviews.sh
+
+      - name: Tessl eval coverage and run for new skills
+        env:
+          BASE_REF: origin/${{ github.base_ref || 'main' }}
+          SKILL_SCOPE: new
+          REQUIRE_EVALS: 'true'
+          RUN_EVALS: 'true'
+          EVAL_LABEL_PREFIX: new-skill-eval
+        run: scripts/run-skill-evals.sh
+
       - name: Upload Tessl review result JSON
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: tessl-review-results
-          path: .tessl/review-results/*.json
+          path: |
+            .tessl/review-results/*.json
+            .tessl/review-results/skill-quality-summary.md
+            .tessl/security-results/**
+            .tessl/eval-results/**
           if-no-files-found: ignore

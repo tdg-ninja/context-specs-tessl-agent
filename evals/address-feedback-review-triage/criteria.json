@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the `address-feedback` Context Specs skill using repo-specific harness behavior.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "triages_four_buckets",
+      "description": "Uses or clearly applies Clear, Ambiguous, Complex, and Out-of-PRD-Scope triage categories.",
+      "max_score": 4
+    },
+    {
+      "name": "fixes_only_clear",
+      "description": "States that clear, in-scope findings should be fixed in the PR with a focused diff.",
+      "max_score": 3
+    },
+    {
+      "name": "comments_on_non_clear",
+      "description": "States that ambiguous, complex, or out-of-scope findings should receive concise reviewer replies rather than speculative edits.",
+      "max_score": 3
+    },
+    {
+      "name": "respects_prd_scope",
+      "description": "Uses the PRD/scope boundary to reject out-of-scope reviewer requests.",
+      "max_score": 3
+    },
+    {
+      "name": "avoids_broad_refactors",
+      "description": "Avoids broad refactors or behavior changes while addressing review feedback.",
+      "max_score": 2
+    }
+  ]
+}

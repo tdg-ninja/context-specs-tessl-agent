@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the `wiki-init` Context Specs skill using repo-specific harness behavior.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "sets_standalone_wiki",
+      "description": "Creates or describes a standalone wiki/vault rather than mixing it into code memory.",
+      "max_score": 3
+    },
+    {
+      "name": "adds_conventions",
+      "description": "Includes conventions and command docs for ingest, query, and lint workflows.",
+      "max_score": 3
+    },
+    {
+      "name": "supports_human_understanding",
+      "description": "Frames the wiki as supporting human understanding before intent.",
+      "max_score": 3
+    },
+    {
+      "name": "separates_expert_memory",
+      "description": "Keeps the human wiki distinct from the project Expert/learn memory used by agents.",
+      "max_score": 4
+    },
+    {
+      "name": "uses_domain_discovery",
+      "description": "Includes domain discovery or source ingestion steps grounded in provided material.",
+      "max_score": 2
+    }
+  ]
+}
