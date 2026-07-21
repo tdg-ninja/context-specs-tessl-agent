@@ -1,4 +1,4 @@
-name: Dark Factory maintenance
+name: Dark Factory maintenance smoke
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
         description: Maintenance task for the Tessl agent to perform
         required: true
         default: 'Inspect the Context Specs plugin, identify stale review records, low-scoring skills, registry drift, and CI gaps. Make safe repo changes only when clearly supported, then summarize next actions.'
-      dry-run:
+      dry_run:
         description: Analyze and report without editing files
         required: false
         default: 'true'
@@ -33,7 +33,7 @@ jobs:
       GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN || secrets.GITHUB_TOKEN }}
       DARK_FACTORY_GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN }}
       TASK: ${{ github.event.inputs.task || 'Weekly Context Specs Dark Factory maintenance: inspect plugin health, review records, registry installability, low-scoring skills, and CI gaps. Make safe repo changes only when clearly supported, then summarize next actions.' }}
-      DRY_RUN: ${{ github.event.inputs['dry-run'] || 'true' }}
+      DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -104,7 +104,7 @@ jobs:
           cat .tessl/dark-factory/agent-output.txt
 
       - name: Non-Tessl post-agent checks
-        if: ${{ github.event.inputs['dry-run'] == 'false' }}
+        if: ${{ github.event.inputs.dry_run == 'false' }}
         run: |
           python3 bin/context-specs.py catalog generate --source .
           python3 scripts/check-review-records.py --root . --min-score 70
@@ -112,7 +112,7 @@ jobs:
           git diff --check
 
       - name: Create pull request for Dark Factory changes
-        if: ${{ github.event.inputs['dry-run'] == 'false' }}
+        if: ${{ github.event.inputs.dry_run == 'false' }}
         run: |
           if git diff --quiet; then
             echo "No Dark Factory changes to propose."

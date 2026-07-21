@@ -131,7 +131,7 @@ confirms the exact required-check names and scope in GitHub branch protection.
   - Runs `tessl eval run .` only when manually dispatched and explicitly requested.
   - Stays advisory by default and does not run on every PR.
 
-- **`dark-factory-maintenance.yml` — Tessl agent maintenance loop**
+- **`dark-factory-health.yml` — Tessl agent maintenance loop**
   - Runs deterministic preflight checks.
   - Runs `tessl agent --print` with a file-backed prompt.
   - In dry-run mode, produces a maintenance report only.
@@ -184,7 +184,7 @@ access to the target repo.
 4. Run registry install smoke:
    - `scripts/registry-install-smoke.sh`
 5. Run Dark Factory in report mode:
-   - GitHub Actions → **Dark Factory maintenance** → `dry-run=true`.
+   - GitHub Actions → **Dark Factory maintenance smoke** → `dry_run=true`.
 6. Run the Dark Factory learning loop:
    - GitHub Actions → **Dark Factory learning loop**.
    - Leave issue and PR creation inputs at `false` for advisory reporting.
