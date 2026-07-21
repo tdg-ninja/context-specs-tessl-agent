@@ -1,0 +1,48 @@
+name: Tessl evals
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-evals:
+        description: Run remote Tessl evals after linting scenarios
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      label:
+        description: Label for the Tessl eval run
+        required: false
+        default: context-specs critical workflows
+
+concurrency:
+  group: tessl-evals-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tessl-evals:
+    name: Tessl eval scenarios
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Tessl CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Lint Tessl eval scenarios
+        run: tessl eval lint .
+
+      - name: Run advisory Tessl evals
+        if: ${{ inputs.run-evals == 'true' }}
+        run: tessl eval run . --label "${{ inputs.label }}"

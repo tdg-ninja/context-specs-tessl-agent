@@ -1,0 +1,26 @@
+{
+  "context": "The response should apply the Dark Factory GitHub issue contract and refuse implementation when the issue is malformed.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "validates_issue_contract_first",
+      "description": "Says the agent must validate the issue against docs/github-issue-contract.md before making changes.",
+      "max_score": 3
+    },
+    {
+      "name": "rejects_missing_required_sections",
+      "description": "Identifies the missing required sections: Scope, Acceptance criteria, and Constraints.",
+      "max_score": 3
+    },
+    {
+      "name": "diagnosis_first_no_repo_edits",
+      "description": "States that implementation must stop and repo files must not be edited when validation fails.",
+      "max_score": 3
+    },
+    {
+      "name": "writes_dark_factory_report",
+      "description": "Says the agent should write a diagnosis-first report under .tessl/dark-factory/ explaining the missing fields and next action.",
+      "max_score": 2
+    }
+  ]
+}
