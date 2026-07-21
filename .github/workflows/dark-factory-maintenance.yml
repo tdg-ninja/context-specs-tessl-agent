@@ -123,9 +123,10 @@ jobs:
           git config user.email "dark-factory[bot]@users.noreply.github.com"
           git checkout -b "$branch"
           git add -A
-          git reset -q -- .tessl/dark-factory .tessl/review-results || true
+          git reset -q -- .tessl/dark-factory .tessl/review-results .tessl/memory || true
           git commit -m "Dark Factory maintenance updates"
           if [ -n "${DARK_FACTORY_GH_TOKEN:-}" ]; then
+            git config --unset-all http.https://github.com/.extraheader || true
             git remote set-url origin "https://x-access-token:${DARK_FACTORY_GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           fi
           git push origin "$branch"
