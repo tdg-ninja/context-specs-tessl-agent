@@ -62,6 +62,7 @@ def main() -> int:
     parser.add_argument("--issue-json", required=True)
     parser.add_argument("--trigger", required=True, choices=["label", "comment", "manual"])
     parser.add_argument("--output", required=True)
+    parser.add_argument("--dispatch-label", default="dark-factory")
     args = parser.parse_args()
 
     issue = json.loads(Path(args.issue_json).read_text())
@@ -88,8 +89,8 @@ def main() -> int:
     if len(constraints.strip()) < 5:
         failures.append("Missing `## Constraints` section. Use `None` only when there are truly no constraints.")
 
-    if args.trigger == "label" and "dark-factory" not in labels(issue):
-        failures.append("Issue-triggered dispatch requires the `dark-factory` label.")
+    if args.trigger == "label" and args.dispatch_label not in labels(issue):
+        failures.append(f"Issue-triggered dispatch requires the `{args.dispatch_label}` label.")
 
     valid = not failures
     report = [
