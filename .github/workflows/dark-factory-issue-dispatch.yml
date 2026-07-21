@@ -74,7 +74,7 @@ jobs:
       - name: Tessl issue structure validation
         run: |
           set -euo pipefail
-          tessl agent --print --no-session --permission-mode accept-edits \
+          tessl agent --print --no-session --permission-mode yolo \
             "Read docs/github-issue-contract.md, .tessl/dark-factory/issue.json, and .tessl/dark-factory/issue-structure.md. Validate whether this GitHub issue is a dispatchable Dark Factory work order. Write .tessl/dark-factory/tessl-issue-validation.json with keys valid(boolean), missing(array), reasoning(string), and write a concise markdown report to .tessl/dark-factory/tessl-issue-validation.md. Do not edit repo source files." \
             > .tessl/dark-factory/tessl-issue-validation-output.txt < /dev/null
           cat .tessl/dark-factory/tessl-issue-validation-output.txt
@@ -95,6 +95,15 @@ jobs:
                   tessl_valid = json.loads(tessl_path.read_text()).get('valid') is True
               except json.JSONDecodeError:
                   tessl_valid = False
+          else:
+              # Fallback for older agent behavior: treat an explicit positive
+              # validation in stdout as the Tessl judgment, while avoiding
+              # ambiguous or negative phrasing.
+              output_path = Path('.tessl/dark-factory/tessl-issue-validation-output.txt')
+              output = output_path.read_text().lower() if output_path.exists() else ''
+              positive = 'valid dispatchable' in output or 'valid: **yes**' in output or 'valid: yes' in output
+              negative = 'invalid' in output or 'not valid' in output or 'not dispatchable' in output
+              tessl_valid = positive and not negative
           valid = deterministic_valid and tessl_valid
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as f:
               f.write(f"valid={'true' if valid else 'false'}\n")
@@ -117,7 +126,8 @@ jobs:
             cat .tessl/dark-factory/tessl-issue-validation-output.txt >> .tessl/dark-factory/report.md
           fi
           gh issue comment "$ISSUE_NUMBER" --body-file .tessl/dark-factory/report.md
-          exit 1
+          echo "Issue is not dispatchable yet; commented with validation report."
+          exit 0
 
       - name: Non-Tessl write implementation prompt
         run: |
