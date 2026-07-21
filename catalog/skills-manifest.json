@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "package": "context-specs",
-  "generatedAt": "2026-07-20T23:59:31.914Z",
+  "generatedAt": "2026-07-21T16:41:08Z",
   "sourceRevision": "catalog",
-  "catalogSha256": "47c2bb9990e7702fd9dd6ac19f3c5708650d90cee7e53be6404b1b48b0d0c3b4",
+  "catalogSha256": "c8b5f8a28aa23ff69de255f88e6f8f5e307b704b9fea121266907bf05b92d353",
   "policy": {
     "installDefault": "reviewed-only",
     "registryDefault": "cap1-context-specs/context-specs"
@@ -452,6 +452,31 @@
         {
           "path": "skills/learn/scripts/check-agents-md.sh",
           "sha256": "46fc459fc2460d4652574e2e73da2b66912241f77d589ad535610de52d738442"
+        }
+      ]
+    },
+    {
+      "name": "release-notes",
+      "description": "Draft concise release notes from merged PRs or a git range. Use when maintainers want a changelog or release-summary draft without manually reading every PR.",
+      "sourcePath": "skills/release-notes",
+      "installPath": ".claude/skills/release-notes",
+      "sha256": "3a086748358c7f1305217ecb844752ae015c4ac391d06ef18b651b1e3c7071fa",
+      "review": {
+        "status": "reviewed",
+        "reviewedAt": "2026-07-21T16:41:08Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f858c-4726-70a3-b9ee-bd82185c3cc7",
+        "score": 94
+      },
+      "files": [
+        {
+          "path": "skills/release-notes/SKILL.md",
+          "sha256": "9c6f7f9366518c838433fde493e490f7f351583c782706097b130a7d92225711"
+        },
+        {
+          "path": "skills/release-notes/references/full-instructions.md",
+          "sha256": "ac4b2a90c9de7f4f12445f8db77e4d29492b01928df9bd2d1f9f3eefab8b9002"
         }
       ]
     },
