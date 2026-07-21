@@ -1,0 +1,5 @@
+{
+  "valid": true,
+  "missing": [],
+  "reasoning": "Issue #4 is a dispatchable Dark Factory work order. It has a non-empty title, the dark-factory label, a concrete ## Goal, a ## Scope identifying documentation-only touched areas plus explicit out-of-scope boundaries, ## Acceptance criteria with checkbox outcomes and expected checks, and ## Constraints defining publish/workflow/source/skill/review-record/catalog limits with diagnosis-first guidance if no docs change is needed."
+}

@@ -1,0 +1,8 @@
+Validated the GitHub issue as a dispatchable Dark Factory work order.
+
+Wrote:
+
+- `.tessl/dark-factory/tessl-issue-validation.json`
+- `.tessl/dark-factory/tessl-issue-validation.md`
+
+Result: **valid**. No required fields are missing.

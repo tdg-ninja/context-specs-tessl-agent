@@ -1,0 +1,31 @@
+Implemented the GitHub issue request.
+
+Changed:
+
+- `README.md`
+  - Added `### Which install path should I use?`
+  - Clarified that `tessl install` installs the private Tessl registry plugin.
+  - Clarified that `context-specs install` resolves the same Tessl plugin and additionally mirrors compatibility files into:
+    - `.claude/skills/`
+    - `.claude/agents/`
+    - `.context-specs/manifest.json`
+  - Kept the Tessl vs compatibility/local glue boundary explicit.
+
+Wrote required Dark Factory report:
+
+- `.tessl/dark-factory/report.md`
+
+Tessl-related steps used:
+
+- Read `.tessl/dark-factory/prompt.md`
+- Read `.tessl/dark-factory/issue.json`
+- Read existing `.tessl/dark-factory/tessl-issue-validation.json`
+- Did not run registry publish commands or workflows.
+
+Deterministic local checks run:
+
+- Validated issue structure against `docs/github-issue-contract.md`
+- `npm test` — passed
+- README acceptance text check — passed
+
+Note: `npm test` emitted an existing Python `datetime.utcnow()` deprecation warning, but the CLI smoke test passed.
