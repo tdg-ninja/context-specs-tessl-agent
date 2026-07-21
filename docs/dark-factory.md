@@ -13,6 +13,8 @@ installable, and safe to roll out.
 - **Tessl plugin validation:** `tessl plugin lint .`.
 - **Tessl publishing:** `tessl plugin publish .`.
 - **Tessl installation:** `tessl install cap1-context-specs/context-specs@<version>`.
+- **Tessl change review:** `tessl change review` with explicit reviewer skills for advisory PR review comments.
+- **Tessl change risk:** `tessl change risk` with checked-in `.github/pr-review-gate/` policy for human-review decisions.
 - **Tessl Dark Factory agent:** `tessl agent --print` in the maintenance workflow.
 
 Everything else is deterministic local glue: Python digest checks, catalog
@@ -40,6 +42,18 @@ PR creation.
   - Runs `tessl change verify lint` for each verifier JSON file.
   - Runs `tessl change verify --dry-run --all --show-files` to inspect verifier scope.
   - Runs `tessl change verify --github` against the pull request diff.
+
+- **`tessl-change-review.yml` — Tessl advisory PR review**
+  - Runs once when a PR opens, reopens, or becomes ready for review; trusted collaborators can rerun with `@tessl-change-review` or workflow dispatch.
+  - Rejects cross-repository fork PRs before any secret-backed Tessl setup.
+  - Runs `tessl change review --json` with the explicit skill `tessl/code-review#review-code-legibility`.
+  - Publishes one advisory GitHub PR review from trusted workflow code and uploads the Tessl JSON artifact.
+
+- **`tessl-change-risk.yml` — Tessl human-confidence/risk decision**
+  - Runs when a PR opens, reopens, or becomes ready for review; trusted collaborators can refresh with `@tessl-change-risk` or workflow dispatch.
+  - Rejects cross-repository fork PRs before any secret-backed Tessl setup.
+  - Runs `tessl change risk --json` using `.github/pr-review-gate/config.json`, `.github/pr-review-gate/policy.md`, and `.github/pr-review-gate/prompt.md`.
+  - Publishes an advisory PR comment that states whether human review is required and uploads the Tessl JSON artifact.
 
 - **`tessl-registry-publish.yml` — Tessl registry release**
   - Verifies review metadata locally.
@@ -112,6 +126,9 @@ access to the target repo.
 - Use deterministic checks on every PR.
 - Use Tessl review/lint on skill or plugin changes.
 - Use Tessl change verify on harness invariant changes.
+- Use Tessl change review for advisory review comments from explicit review skills.
+- Use Tessl change risk as an advisory human-confidence gate; a `human review required` decision is normal signal, not a failed workflow.
+- Keep branch protection unchanged during the advisory rollout. If promoted later, consider requiring these check names: **Tessl change review advisory PR review** and **Tessl change risk human-confidence gate**.
 - Use registry install smoke weekly and before demos.
 - Use Dark Factory dry-run weekly for health reports.
 - Use Dark Factory write mode only when you want an automated maintenance PR.
