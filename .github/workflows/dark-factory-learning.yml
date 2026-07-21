@@ -1,0 +1,219 @@
+name: Dark Factory learning loop
+
+on:
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: Days of GitHub activity to analyze
+        required: false
+        default: '14'
+      create_follow_up_issues:
+        description: Create bounded follow-up issues from the learning report
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+      issue_limit:
+        description: Maximum follow-up issues to create when enabled
+        required: false
+        default: '3'
+      create_maintenance_pr:
+        description: Allow the Tessl agent to make safe harness improvements and open a PR
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+  schedule:
+    - cron: '43 11 * * 1'
+
+concurrency:
+  group: dark-factory-learning-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  learn:
+    name: Learn from Dark Factory evidence
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      issues: write
+      pull-requests: write
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+      GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN || secrets.GITHUB_TOKEN }}
+      DARK_FACTORY_GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN }}
+      LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '14' }}
+      CREATE_FOLLOW_UP_ISSUES: ${{ github.event.inputs.create_follow_up_issues || 'false' }}
+      ISSUE_LIMIT: ${{ github.event.inputs.issue_limit || '3' }}
+      CREATE_MAINTENANCE_PR: ${{ github.event.inputs.create_maintenance_pr || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Tessl CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Non-Tessl collect GitHub learning evidence
+        run: |
+          set -euo pipefail
+          python3 scripts/collect-dark-factory-learning.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --lookback-days "$LOOKBACK_DAYS" \
+            --output-dir .tessl/dark-factory/learning
+
+      - name: Non-Tessl write learning prompt
+        run: |
+          set -euo pipefail
+          mkdir -p .tessl/dark-factory/learning
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          create_maintenance_pr = os.environ.get("CREATE_MAINTENANCE_PR", "false")
+          issue_limit = os.environ.get("ISSUE_LIMIT", "3")
+          Path(".tessl/dark-factory/learning-prompt.md").write_text(f"""You are the Dark Factory learning-loop agent for the Context Specs repository.
+
+          Analyze these local evidence files:
+          - .tessl/dark-factory/learning/evidence-summary.md
+          - .tessl/dark-factory/learning/metadata.json
+          - .tessl/dark-factory/learning/merged-prs.json
+          - .tessl/dark-factory/learning/closed-unmerged-prs.json
+          - .tessl/dark-factory/learning/failed-runs.json
+          - .tessl/dark-factory/learning/dark-factory-activity.json
+          - .tessl/dark-factory/learning/missing-data.json
+
+          Read docs/dark-factory.md and docs/github-issue-contract.md for operating context.
+
+          Tasks:
+          - Write .tessl/dark-factory/learning-report.md summarizing recurring failures, review-feedback themes, closed-without-merge lessons, and recommended harness improvements.
+          - Write .tessl/dark-factory/learning/follow-up-issues.json as a JSON array of at most {issue_limit} proposed issues. Each item must have title, body, and labels. Use an empty array if no issue is warranted.
+          - If collection is partial, call out missing data and base recommendations only on available evidence.
+          - Make it explicit which steps used Tessl and which were deterministic local checks.
+          - Do not publish Tessl registry versions.
+          - Do not auto-merge anything.
+
+          Maintenance PR mode: {create_maintenance_pr}
+          If maintenance PR mode is false, do not edit repo source files.
+          If maintenance PR mode is true, make only small, safe harness/documentation changes clearly supported by the evidence and summarize them in the report.
+          """)
+          PY
+
+      - name: Tessl learning analysis
+        run: |
+          set -euo pipefail
+          if [ "$CREATE_MAINTENANCE_PR" = "true" ]; then
+            tessl agent --print --no-session --permission-mode yolo \
+              "Read .tessl/dark-factory/learning-prompt.md and perform the requested Dark Factory learning loop." \
+              > .tessl/dark-factory/learning-agent-output.txt < /dev/null
+          else
+            tessl agent --print --no-session --permission-mode accept-edits \
+              "Read .tessl/dark-factory/learning-prompt.md and perform the requested Dark Factory learning analysis." \
+              > .tessl/dark-factory/learning-agent-output.txt < /dev/null
+          fi
+          cat .tessl/dark-factory/learning-agent-output.txt
+          if [ ! -s .tessl/dark-factory/learning-report.md ]; then
+            cp .tessl/dark-factory/learning-agent-output.txt .tessl/dark-factory/learning-report.md
+          fi
+
+      - name: Non-Tessl post-agent checks
+        run: |
+          set -euo pipefail
+          python3 -m py_compile bin/context-specs.py scripts/check-review-records.py scripts/update-review-record.py scripts/validate-github-issue.py scripts/collect-dark-factory-learning.py
+          python3 bin/context-specs.py catalog generate --source .
+          python3 scripts/check-review-records.py --root . --min-score 70
+          scripts/test-cli.sh
+          git diff --check
+
+      - name: Non-Tessl create bounded follow-up issues
+        if: env.CREATE_FOLLOW_UP_ISSUES == 'true'
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          import tempfile
+          from pathlib import Path
+
+          path = Path('.tessl/dark-factory/learning/follow-up-issues.json')
+          if not path.exists():
+              print('No follow-up issue proposal file found.')
+              raise SystemExit(0)
+
+          try:
+              proposals = json.loads(path.read_text())
+          except json.JSONDecodeError as exc:
+              print(f'Invalid follow-up issue JSON: {exc}')
+              raise SystemExit(0)
+
+          limit = max(0, min(int(os.environ.get('ISSUE_LIMIT', '3')), 5))
+          if not isinstance(proposals, list):
+              print('Follow-up issue proposals are not a JSON array.')
+              raise SystemExit(0)
+
+          created = []
+          for proposal in proposals[:limit]:
+              if not isinstance(proposal, dict):
+                  continue
+              title = str(proposal.get('title') or '').strip()
+              body = str(proposal.get('body') or '').strip()
+              labels = [str(label) for label in proposal.get('labels', []) if str(label).strip()]
+              if not title or not body:
+                  continue
+              body = body + '\n\n---\nCreated by the Dark Factory learning loop from bounded recommendations.'
+              with tempfile.NamedTemporaryFile('w', delete=False, encoding='utf-8') as handle:
+                  handle.write(body)
+                  body_file = handle.name
+              command = ['gh', 'issue', 'create', '--title', title, '--body-file', body_file]
+              for label in labels[:5]:
+                  command.extend(['--label', label])
+              result = subprocess.run(command, check=False, text=True, capture_output=True)
+              if result.returncode == 0:
+                  created.append(result.stdout.strip())
+                  print(result.stdout.strip())
+              else:
+                  print(result.stderr.strip())
+          Path('.tessl/dark-factory/learning/created-follow-up-issues.txt').write_text('\n'.join(created) + ('\n' if created else ''))
+          PY
+
+      - name: Non-Tessl create maintenance PR
+        if: env.CREATE_MAINTENANCE_PR == 'true'
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- ':!.tessl/dark-factory'; then
+            echo "No maintenance changes to propose."
+            exit 0
+          fi
+
+          branch="dark-factory/learning-${GITHUB_RUN_ID}"
+          git config user.name "dark-factory[bot]"
+          git config user.email "dark-factory[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add -A
+          git reset -q -- .tessl/dark-factory .tessl/review-results .tessl/memory || true
+          git commit -m "Apply Dark Factory learning improvements"
+          if [ -n "${DARK_FACTORY_GH_TOKEN:-}" ]; then
+            git config --unset-all http.https://github.com/.extraheader || true
+            git remote set-url origin "https://x-access-token:${DARK_FACTORY_GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          fi
+          git push origin "$branch"
+          gh pr create \
+            --title "Apply Dark Factory learning improvements" \
+            --body-file .tessl/dark-factory/learning-report.md \
+            --base main \
+            --head "$branch"
+
+      - name: Upload Dark Factory learning report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dark-factory-learning
+          path: .tessl/dark-factory/**
+          if-no-files-found: ignore
