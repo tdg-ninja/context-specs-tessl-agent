@@ -1,0 +1,140 @@
+name: Tessl change risk human-confidence gate
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr-number:
+        description: PR number to assess
+        required: true
+        type: string
+
+concurrency:
+  group: tessl-change-risk-${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs['pr-number'] }}
+  cancel-in-progress: ${{ github.event_name != 'issue_comment' }}
+
+jobs:
+  tessl-change-risk:
+    name: Tessl change risk human-confidence gate
+    if: >-
+      (github.event_name != 'pull_request' || !github.event.pull_request.draft) &&
+      (github.event_name != 'issue_comment' ||
+       (github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '@tessl-change-risk') &&
+        (github.event.comment.author_association == 'OWNER' ||
+         github.event.comment.author_association == 'MEMBER' ||
+         github.event.comment.author_association == 'COLLABORATOR' ||
+         github.event.comment.author_association == 'ADMIN')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    env:
+      REPO: ${{ github.repository }}
+      RISK_OUTPUT: change-risk.json
+    steps:
+      - name: Tessl change risk resolve PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_PR_NUMBER: ${{ github.event.inputs['pr-number'] }}
+          COMMENT_PR_NUMBER: ${{ github.event.issue.number }}
+          EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_IS_CROSS_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$EVENT_NAME" = "issue_comment" ]; then
+            if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+              PR_NUMBER="$INPUT_PR_NUMBER"
+            else
+              PR_NUMBER="$COMMENT_PR_NUMBER"
+            fi
+            PR_JSON=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json headRefOid,isCrossRepository,baseRefName)
+            HEAD_SHA=$(jq -r .headRefOid <<< "$PR_JSON")
+            IS_CROSS_REPOSITORY=$(jq -r .isCrossRepository <<< "$PR_JSON")
+            BASE_REF="origin/$(jq -r .baseRefName <<< "$PR_JSON")"
+          else
+            PR_NUMBER="$EVENT_PR_NUMBER"
+            HEAD_SHA="$EVENT_HEAD_SHA"
+            IS_CROSS_REPOSITORY="$EVENT_IS_CROSS_REPOSITORY"
+            BASE_REF="origin/${{ github.base_ref || 'main' }}"
+          fi
+          echo "pr-number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "head-sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "is-cross-repository=$IS_CROSS_REPOSITORY" >> "$GITHUB_OUTPUT"
+          echo "base-ref=$BASE_REF" >> "$GITHUB_OUTPUT"
+
+      - name: Tessl change risk reject fork PRs
+        if: steps.pr.outputs.is-cross-repository == 'true'
+        run: |
+          echo "Refusing to run privileged Tessl change risk on a cross-repository PR." >&2
+          exit 1
+
+      - name: Tessl change risk checkout trusted publisher
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: _workflow
+          sparse-checkout: |
+            .github/change-risk/publish-risk-comment.mjs
+          persist-credentials: false
+
+      - name: Tessl change risk checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.head-sha }}
+          path: _pr
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Tessl install CLI for change risk
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check for change risk
+        working-directory: _pr
+        env:
+          TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+        run: tessl auth whoami
+
+      - name: Tessl change risk assess human review requirement
+        working-directory: _pr
+        env:
+          TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+          RISK_OUTPUT: ${{ env.RISK_OUTPUT }}
+          RISK_BASE: ${{ steps.pr.outputs.base-ref }}
+        run: |
+          set -euo pipefail
+          tessl change risk \
+            --json \
+            --output "$RISK_OUTPUT" \
+            --base "$RISK_BASE"
+
+      - name: Tessl change risk publish advisory decision
+        working-directory: _pr
+        env:
+          GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN || secrets.GITHUB_TOKEN }}
+          REPO: ${{ env.REPO }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr-number }}
+          ASSESSED_SHA: ${{ steps.pr.outputs.head-sha }}
+          RISK_OUTPUT: ${{ env.RISK_OUTPUT }}
+          OUT: risk-publish.json
+        run: node ../_workflow/.github/change-risk/publish-risk-comment.mjs
+
+      - name: Tessl change risk upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tessl-change-risk-${{ steps.pr.outputs.head-sha }}
+          path: |
+            _pr/${{ env.RISK_OUTPUT }}
+            _pr/risk-publish.json
+          if-no-files-found: ignore

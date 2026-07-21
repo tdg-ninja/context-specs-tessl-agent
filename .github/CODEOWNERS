@@ -1,1 +1,11 @@
-* @capitalone/context-specs-admin-team @capitalone/capital-one-ospo
+# Fork-local Dark Factory review owner.
+# Verified repository admin for tdg-ninja/context-specs-tessl-agent.
+* @tdg-ninja
+
+# Governance-sensitive Dark Factory surfaces require the same human owner.
+.github/CODEOWNERS @tdg-ninja
+.github/workflows/** @tdg-ninja
+.tessl-plugin/** @tdg-ninja
+tessl.json @tdg-ninja
+verifiers/** @tdg-ninja
+docs/dark-factory.md @tdg-ninja

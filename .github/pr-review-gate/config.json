@@ -1,0 +1,160 @@
+{
+  "policyPath": ".github/pr-review-gate/policy.md",
+  "trustMode": "read-only",
+  "baseRef": "origin/main",
+  "contextBudget": {
+    "maxInputTokens": 120000,
+    "charsPerToken": 4,
+    "maxResponseTokens": 2000,
+    "onOverflow": "fail"
+  },
+  "diff": {
+    "maxFilesWithFullContent": 50,
+    "maxDiffBytes": 200000,
+    "maxFileBytesInPrompt": 20000
+  },
+  "gate": {
+    "maxRiskLevelForNoReview": "low",
+    "minConfidence": 0.8,
+    "alwaysReviewOnPolicyOrConfigChange": true,
+    "alwaysReviewBuckets": [
+      "secrets",
+      "ci",
+      "deps"
+    ]
+  },
+  "buckets": {
+    "docs": [
+      "**/*.md",
+      "**/*.mdx",
+      "**/*.txt",
+      "README.md",
+      "docs/**"
+    ],
+    "tests": [
+      "**/*.test.*",
+      "**/*.spec.*",
+      "**/test/**",
+      "**/tests/**",
+      "**/__tests__/**"
+    ],
+    "source": [
+      "**/*.go",
+      "**/*.js",
+      "**/*.jsx",
+      "**/*.py",
+      "**/*.rs",
+      "**/*.ts",
+      "**/*.tsx",
+      "bin/**",
+      "scripts/**"
+    ],
+    "config": [
+      "**/*.ini",
+      "**/*.json",
+      "**/*.toml",
+      "**/*.yaml",
+      "**/*.yml",
+      ".tessl-plugin/**",
+      "catalog/**",
+      "tessl.json",
+      "verifiers/**"
+    ],
+    "ci": [
+      ".github/**",
+      "**/Dockerfile",
+      "**/docker-compose*.yml",
+      "**/*.tf"
+    ],
+    "deps": [
+      "**/package.json",
+      "**/bun.lock",
+      "**/package-lock.json",
+      "**/yarn.lock",
+      "**/go.mod",
+      "**/go.sum",
+      "**/Cargo.toml",
+      "**/Cargo.lock",
+      "**/requirements*.txt",
+      "**/poetry.lock"
+    ]
+  },
+  "sensitiveBuckets": {
+    "auth": [
+      "**/auth/**",
+      "**/*auth*",
+      "**/permission*/**",
+      "**/*permission*",
+      "**/rbac/**",
+      "**/*acl*"
+    ],
+    "billing": [
+      "**/billing/**",
+      "**/*billing*",
+      "**/payment*/**",
+      "**/*payment*",
+      "**/*stripe*",
+      "**/*invoice*"
+    ],
+    "migrations": [
+      "**/migrations/**",
+      "**/migrate/**",
+      "**/*.sql",
+      "**/schema.prisma",
+      "**/drizzle/**"
+    ],
+    "secrets": [
+      "**/*.env*",
+      "**/secret*/**",
+      "**/*secret*",
+      "**/*credential*",
+      "**/*.pem",
+      "**/*.key"
+    ],
+    "infra": [
+      "**/*.tf",
+      "**/k8s/**",
+      "**/kubernetes/**",
+      "**/helm/**",
+      "**/terraform/**"
+    ]
+  },
+  "testGlobs": [
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/test/**",
+    "**/tests/**",
+    "**/__tests__/**"
+  ],
+  "sourceGlobs": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
+    "**/*.py",
+    "**/*.go",
+    "**/*.rs",
+    "**/*.java",
+    "**/*.rb",
+    "**/*.c",
+    "**/*.cpp",
+    "**/*.cs"
+  ],
+  "policyConfigGlobs": [
+    "**/*.tf",
+    "**/Dockerfile",
+    "**/bun.lock",
+    "**/package.json",
+    "**/tsconfig*.json",
+    "**/turbo.json",
+    ".github/**",
+    ".github/pr-review-gate/**",
+    ".tessl-plugin/**",
+    "catalog/**",
+    "docs/github-issue-contract.md",
+    "skills/**",
+    "subagents/**",
+    "tessl.json",
+    "verifiers/**"
+  ]
+}

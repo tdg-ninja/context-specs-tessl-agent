@@ -14,11 +14,71 @@ installable, and safe to roll out.
 - **Tessl plugin validation:** `tessl plugin lint .`.
 - **Tessl publishing:** `tessl plugin publish .`.
 - **Tessl installation:** `tessl install cap1-context-specs/context-specs@<version>`.
+- **Tessl change review:** `tessl change review` with explicit reviewer skills for advisory PR review comments.
+- **Tessl change risk:** `tessl change risk` with checked-in `.github/pr-review-gate/` policy for human-review decisions.
 - **Tessl Dark Factory agent:** `tessl agent --print` in the maintenance workflow.
 
 Everything else is deterministic local glue: Python digest checks, catalog
 generation, compatibility mirroring into `.claude/`, shell smoke tests, and GitHub
 PR creation.
+
+## Human review routing
+
+Dark Factory PRs are authored by automation but merged by people. The fork-local
+review owner is `@tdg-ninja`, verified as an administrator of
+`tdg-ninja/context-specs-tessl-agent`. `.github/CODEOWNERS` routes all files to
+that owner and repeats ownership for governance-sensitive Dark Factory surfaces.
+
+Require human review from `@tdg-ninja` before merging PRs that touch any of these
+risky categories:
+
+- **Workflow changes:** `.github/workflows/**` or reviewer-routing files.
+- **Auth or token changes:** GitHub permissions, secrets, token names, or setup steps.
+- **Verifier policy changes:** `verifiers/**`, `tessl.json`, or verifier-scoped docs.
+- **Registry publishing changes:** `.tessl-plugin/**`, `tessl-registry-publish.yml`, or publish/install docs.
+- **Dark Factory dispatch changes:** issue validation, prompt wiring, PR creation, or branch/publish behavior.
+
+Use Tessl PR gates as inputs to review, not as replacements for review. A failing
+Tessl gate blocks merge until fixed; a passing Tessl gate still needs the human
+review above for risky categories.
+
+## Branch protection recommendations for `main`
+
+Recommended required checks:
+
+- **`Non-Tessl deterministic catalog and CLI checks`:** require on PRs that touch
+  skills, subagents, catalog data, CLI code, scripts, or workflow dispatch glue.
+- **`Tessl change verify harness invariants`:** require on PRs that touch
+  workflows, verifier policy, harness docs, issue validation, `tessl.json`,
+  skills, or review metadata.
+- **`Tessl review/lint gate`:** require on PRs that touch plugin packaging,
+  skills, subagents, catalog data, CLI code, scripts, or the quality workflow.
+
+Recommended branch protection settings:
+
+- Require a pull request before merging into `main`.
+- Require at least one approval from Code Owners.
+- Require review from Code Owners.
+- Dismiss stale approvals when new commits are pushed.
+- Require conversation resolution before merge.
+- Require branches to be up to date before merge when the required checks are enabled.
+- Do not enable auto-merge for Dark Factory PRs.
+
+Advisory checks and workflows:
+
+- **`Dark Factory maintenance`:** advisory scheduled/reporting loop; do not make it
+  a required merge check.
+- **`Dark Factory issue dispatch`:** automation entrypoint that opens work PRs;
+  do not make it a required merge check.
+- **`Tessl registry install smoke`:** advisory installability signal for demos,
+  releases, and scheduled health checks.
+- **`Tessl registry publish`:** manual release workflow only; never required for
+  ordinary PR merge.
+- **`Tessl consumer rollout`:** manual downstream rollout workflow only; never
+  required for this repository's `main` branch.
+
+Do not enforce these settings through an API call until the repository owner
+confirms the exact required-check names and scope in GitHub branch protection.
 
 ## GitHub Actions
 
@@ -42,6 +102,18 @@ PR creation.
   - Runs `tessl change verify --dry-run --all --show-files` to inspect verifier scope.
   - Runs `tessl change verify --github` against the pull request diff.
 
+- **`tessl-change-review.yml` — Tessl advisory PR review**
+  - Runs once when a PR opens, reopens, or becomes ready for review; trusted collaborators can rerun with `@tessl-change-review` or workflow dispatch.
+  - Rejects cross-repository fork PRs before any secret-backed Tessl setup.
+  - Runs `tessl change review --json` with the explicit skill `tessl/code-review#review-code-legibility`.
+  - Publishes one advisory GitHub PR review from trusted workflow code and uploads the Tessl JSON artifact.
+
+- **`tessl-change-risk.yml` — Tessl human-confidence/risk decision**
+  - Runs when a PR opens, reopens, or becomes ready for review; trusted collaborators can refresh with `@tessl-change-risk` or workflow dispatch.
+  - Rejects cross-repository fork PRs before any secret-backed Tessl setup.
+  - Runs `tessl change risk --json` using `.github/pr-review-gate/config.json`, `.github/pr-review-gate/policy.md`, and `.github/pr-review-gate/prompt.md`.
+  - Publishes an advisory PR comment that states whether human review is required and uploads the Tessl JSON artifact.
+
 - **`tessl-registry-publish.yml` — Tessl registry release**
   - Verifies review metadata locally.
   - Runs `tessl plugin lint .`.
@@ -64,6 +136,14 @@ PR creation.
   - Runs `tessl agent --print` with a file-backed prompt.
   - In dry-run mode, produces a maintenance report only.
   - In write mode, allows safe repo edits and opens a PR.
+  - Does not publish; publishing stays in `tessl-registry-publish.yml`.
+
+- **`dark-factory-learning.yml` — Tessl agent learning loop**
+  - Runs weekly or manually, not on push.
+  - Collects recent merged PRs, closed-without-merge PRs, failed workflow runs, review feedback, and Dark Factory issue/PR activity into `.tessl/dark-factory/learning/` files.
+  - Runs `tessl agent --print` with a file-backed prompt that references the collected evidence.
+  - Uploads a learning report artifact with recurring failure themes and recommended harness improvements.
+  - Starts advisory by default; follow-up issue creation is opt-in and capped, and maintenance PR creation is a separate explicit opt-in.
   - Does not publish; publishing stays in `tessl-registry-publish.yml`.
 
 - **`dark-factory-issue-dispatch.yml` — GitHub issue-originated Dark Factory work**
@@ -105,17 +185,22 @@ access to the target repo.
    - `scripts/registry-install-smoke.sh`
 5. Run Dark Factory in report mode:
    - GitHub Actions → **Dark Factory maintenance** → `dry-run=true`.
-6. Originate work from a GitHub issue:
+6. Run the Dark Factory learning loop:
+   - GitHub Actions → **Dark Factory learning loop**.
+   - Leave issue and PR creation inputs at `false` for advisory reporting.
+   - Set `create_follow_up_issues=true` only when you want up to the configured issue cap filed from the learning report.
+   - Set `create_maintenance_pr=true` only when you want the agent to make small harness/doc changes and open a PR.
+7. Originate work from a GitHub issue:
    - Create an issue with the **Dark Factory task** template or follow `docs/github-issue-contract.md`.
    - Add the `dark-factory` label or comment `/dark-factory`.
    - The issue-dispatch workflow validates the issue shape, runs the Tessl agent, and opens a PR when it makes changes.
-7. Run critical workflow evals when changing covered behavior:
+8. Run critical workflow evals when changing covered behavior:
    - Read `docs/evals.md`.
    - GitHub Actions → **Tessl evals** → keep `run-evals=false` for lint-only, or set `run-evals=true` for a manual advisory eval run.
-8. Publish a release candidate:
+9. Publish a release candidate:
    - GitHub Actions → **Tessl registry publish** → `dry-run=true`.
    - Re-run with `dry-run=false` only after the dry run passes.
-9. Roll out to a consumer repo:
+10. Roll out to a consumer repo:
    - GitHub Actions → **Tessl consumer rollout**.
    - Enter `owner/repo` and the reviewed registry version.
 
@@ -125,8 +210,13 @@ access to the target repo.
 - Use Tessl review/lint on skill or plugin changes.
 - Use Tessl eval lint on eval changes, and manual Tessl eval runs on covered critical workflow changes.
 - Use Tessl change verify on harness invariant changes.
+- Use Tessl change review for advisory review comments from explicit review skills.
+- Use Tessl change risk as an advisory human-confidence gate; a `human review required` decision is normal signal, not a failed workflow.
+- Keep branch protection unchanged during the advisory rollout. If promoted later, consider requiring these check names: **Tessl change review advisory PR review** and **Tessl change risk human-confidence gate**.
 - Use registry install smoke weekly and before demos.
-- Use Dark Factory dry-run weekly for health reports.
+- Use Dark Factory maintenance dry-run weekly for current plugin health reports and clearly scoped upkeep.
+- Use Dark Factory learning weekly for evidence-driven harness improvements from merged PRs, failed runs, review feedback, and closed-without-merge work.
 - Use Dark Factory write mode only when you want an automated maintenance PR.
+- Use learning-loop issue creation only with the explicit opt-in input and bounded issue cap.
 - Use GitHub issues plus the `dark-factory` label or `/dark-factory` comment for issue-originated work.
 - Use publish workflow manually after review metadata and lint are clean.
