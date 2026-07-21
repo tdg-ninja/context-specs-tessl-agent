@@ -28,6 +28,47 @@ for skill in "${skills[@]}"; do
     continue
   fi
 
+  if python3 - "$skill" "$MIN_SCORE" <<'PY'
+import hashlib, json, sys
+from pathlib import Path
+
+skill = sys.argv[1]
+min_score = int(sys.argv[2])
+root = Path('.')
+skill_dir = root / 'skills' / skill
+review_path = root / 'catalog' / 'reviews' / f"skills__{skill}.json"
+
+def sha256_file(path):
+    h = hashlib.sha256()
+    with path.open('rb') as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b''):
+            h.update(chunk)
+    return h.hexdigest()
+
+entries = [
+    {'path': p.as_posix(), 'sha256': sha256_file(p)}
+    for p in sorted(skill_dir.rglob('*'))
+    if p.is_file()
+]
+digest = hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+if not review_path.exists():
+    sys.exit(1)
+review = json.loads(review_path.read_text())
+if review.get('sha256') != digest:
+    sys.exit(1)
+if review.get('status') != 'reviewed':
+    sys.exit(1)
+if not isinstance(review.get('score'), int) or review['score'] < min_score:
+    sys.exit(1)
+if not review.get('reviewRunId'):
+    sys.exit(1)
+sys.exit(0)
+PY
+  then
+    echo "Existing Tessl review record for $skill is current and meets score threshold; skipping new review."
+    continue
+  fi
+
   echo "::group::Tessl quality review: $skill"
   echo "Running: tessl review run quality --workspace $WORKSPACE --threshold $MIN_SCORE --force skills/$skill"
   set +e
