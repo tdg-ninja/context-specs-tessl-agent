@@ -1,0 +1,6 @@
+{
+  "name": "cap1-context-specs/implement-issue",
+  "version": "0.1.0",
+  "description": "Implement a structured GitHub issue in a repository and open a pull request.",
+  "private": true
+}

@@ -13,7 +13,7 @@ on:
       skill:
         description: Registry skill to launch in the Tessl cloud sandbox
         required: false
-        default: 'tessl-fe/implement-issue@0.1.0#implement-issue'
+        default: 'cap1-context-specs/implement-issue@0.1.0#implement-issue'
       agent:
         description: Cloud agent backend
         required: false
@@ -42,7 +42,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CLOUD_GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN || secrets.GITHUB_TOKEN }}
       ISSUE_NUMBER: ${{ github.event.issue.number || inputs['issue-number'] }}
-      CLOUD_SKILL: ${{ inputs.skill || 'tessl-fe/implement-issue@0.1.0#implement-issue' }}
+      CLOUD_SKILL: ${{ inputs.skill || 'cap1-context-specs/implement-issue@0.1.0#implement-issue' }}
       CLOUD_AGENT: ${{ inputs.agent || 'tessl-agent' }}
     steps:
       - uses: actions/checkout@v4
