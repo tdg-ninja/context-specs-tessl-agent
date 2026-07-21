@@ -32,7 +32,7 @@ jobs:
       TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TASK: ${{ github.event.inputs.task || 'Weekly Context Specs Dark Factory maintenance: inspect plugin health, review records, registry installability, low-scoring skills, and CI gaps. Make safe repo changes only when clearly supported, then summarize next actions.' }}
-      DRY_RUN: ${{ github.event.inputs.dry-run || 'true' }}
+      DRY_RUN: ${{ github.event.inputs['dry-run'] || 'true' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -103,7 +103,7 @@ jobs:
           cat .tessl/dark-factory/agent-output.txt
 
       - name: Non-Tessl post-agent checks
-        if: ${{ github.event.inputs.dry-run == 'false' }}
+        if: ${{ github.event.inputs['dry-run'] == 'false' }}
         run: |
           python3 bin/context-specs.py catalog generate --source .
           python3 scripts/check-review-records.py --root . --min-score 70
@@ -111,7 +111,7 @@ jobs:
           git diff --check
 
       - name: Create pull request for Dark Factory changes
-        if: ${{ github.event.inputs.dry-run == 'false' }}
+        if: ${{ github.event.inputs['dry-run'] == 'false' }}
         run: |
           if git diff --quiet; then
             echo "No Dark Factory changes to propose."

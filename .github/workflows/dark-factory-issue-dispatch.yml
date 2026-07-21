@@ -18,7 +18,7 @@ on:
         options: ['true', 'false']
 
 concurrency:
-  group: dark-factory-issue-${{ github.event.issue.number || inputs.issue-number }}
+  group: dark-factory-issue-${{ github.event.issue.number || inputs['issue-number'] }}
   cancel-in-progress: false
 
 jobs:
@@ -36,8 +36,8 @@ jobs:
     env:
       TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue-number }}
-      DRY_RUN: ${{ inputs.dry-run || 'false' }}
+      ISSUE_NUMBER: ${{ github.event.issue.number || inputs['issue-number'] }}
+      DRY_RUN: ${{ inputs['dry-run'] || 'false' }}
     steps:
       - uses: actions/checkout@v4
         with:

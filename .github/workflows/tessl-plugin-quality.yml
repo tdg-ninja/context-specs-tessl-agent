@@ -30,7 +30,7 @@ jobs:
     env:
       TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
       TESSL_WORKSPACE: cap1-context-specs
-      MIN_REVIEW_SCORE: ${{ github.event.inputs.min-review-score || '70' }}
+      MIN_REVIEW_SCORE: ${{ github.event.inputs['min-review-score'] || '70' }}
     steps:
       - uses: actions/checkout@v4
         with:

@@ -16,7 +16,7 @@ on:
         default: 'context-specs/update'
 
 concurrency:
-  group: tessl-consumer-rollout-${{ inputs.target-repository }}
+  group: tessl-consumer-rollout-${{ inputs['target-repository'] }}
   cancel-in-progress: false
 
 jobs:
@@ -30,13 +30,13 @@ jobs:
       TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
       GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN }}
       CONTEXT_SPECS_VERSION: ${{ inputs.version }}
-      TARGET_REPOSITORY: ${{ inputs.target-repository }}
-      BRANCH_PREFIX: ${{ inputs.branch-prefix }}
+      TARGET_REPOSITORY: ${{ inputs['target-repository'] }}
+      BRANCH_PREFIX: ${{ inputs['branch-prefix'] }}
     steps:
       - name: Checkout consumer repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ inputs.target-repository }}
+          repository: ${{ inputs['target-repository'] }}
           token: ${{ secrets.DARK_FACTORY_GH_TOKEN }}
           path: consumer
           fetch-depth: 0

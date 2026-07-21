@@ -65,11 +65,11 @@ jobs:
           if [ -n "${{ inputs.bump }}" ]; then
             args+=(--bump "${{ inputs.bump }}")
           fi
-          if [ "${{ inputs.dry-run }}" = "true" ]; then
+          if [ "${{ inputs['dry-run'] }}" = "true" ]; then
             args+=(--dry-run)
           fi
           tessl plugin publish "${args[@]}"
 
       - name: Tessl registry info
-        if: ${{ inputs.dry-run == 'false' }}
+        if: ${{ inputs['dry-run'] == 'false' }}
         run: tessl plugin info "cap1-context-specs/context-specs@${{ inputs.version }}"
