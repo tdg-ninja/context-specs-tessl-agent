@@ -1,0 +1,31 @@
+{
+  "context": "The response should enforce Dark Factory's no-publish boundary for issue-originated work and separate Tessl steps from deterministic local checks.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "does_not_publish_from_issue_workflow",
+      "description": "Clearly refuses to publish a Tessl registry version from issue-originated Dark Factory work.",
+      "max_score": 4
+    },
+    {
+      "name": "routes_publish_to_registry_workflow",
+      "description": "Directs publishing to the manual tessl-registry-publish workflow instead of the issue implementation workflow.",
+      "max_score": 3
+    },
+    {
+      "name": "allows_safe_repo_changes_and_pr",
+      "description": "Allows safe repo edits for the requested maintenance change and opening a PR when the issue is otherwise valid and dry run is false.",
+      "max_score": 2
+    },
+    {
+      "name": "separates_tessl_and_deterministic_checks",
+      "description": "Says the final report should explicitly list which steps used Tessl and which were deterministic local checks.",
+      "max_score": 2
+    },
+    {
+      "name": "keeps_generated_context_in_files",
+      "description": "Mentions keeping generated logs, prompts, and reports in files under .tessl/dark-factory/ rather than inlining large context.",
+      "max_score": 1
+    }
+  ]
+}

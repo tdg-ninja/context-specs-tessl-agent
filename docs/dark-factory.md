@@ -10,6 +10,7 @@ installable, and safe to roll out.
 - **Tessl workspace:** `cap1-context-specs`.
 - **Tessl plugin manifest:** `.tessl-plugin/plugin.json`.
 - **Tessl quality review:** `tessl review run quality` for each changed skill.
+- **Tessl evals:** `tessl eval lint .` and manual `tessl eval run .` for repeatable critical workflow behavior checks.
 - **Tessl plugin validation:** `tessl plugin lint .`.
 - **Tessl publishing:** `tessl plugin publish .`.
 - **Tessl installation:** `tessl install cap1-context-specs/context-specs@<version>`.
@@ -52,6 +53,12 @@ PR creation.
   - Runs the wrapper CLI against the private Tessl registry package.
   - Verifies `.tessl/plugins/`, `.claude/skills/`, `.claude/agents/`, and `.context-specs/manifest.json`.
 
+- **`tessl-evals.yml` — Tessl eval scenarios**
+  - Installs the Tessl CLI.
+  - Runs `tessl eval lint .` as a deterministic scenario-shape preflight.
+  - Runs `tessl eval run .` only when manually dispatched and explicitly requested.
+  - Stays advisory by default and does not run on every PR.
+
 - **`dark-factory-maintenance.yml` — Tessl agent maintenance loop**
   - Runs deterministic preflight checks.
   - Runs `tessl agent --print` with a file-backed prompt.
@@ -92,18 +99,23 @@ access to the target repo.
    - `python3 bin/context-specs.py catalog generate --source .`
    - `python3 scripts/check-review-records.py --root . --min-score 70`
    - `scripts/test-cli.sh`
-3. Run registry install smoke:
+3. Validate Tessl eval scenario shape:
+   - `tessl eval lint .`
+4. Run registry install smoke:
    - `scripts/registry-install-smoke.sh`
-4. Run Dark Factory in report mode:
+5. Run Dark Factory in report mode:
    - GitHub Actions → **Dark Factory maintenance** → `dry-run=true`.
-5. Originate work from a GitHub issue:
+6. Originate work from a GitHub issue:
    - Create an issue with the **Dark Factory task** template or follow `docs/github-issue-contract.md`.
    - Add the `dark-factory` label or comment `/dark-factory`.
    - The issue-dispatch workflow validates the issue shape, runs the Tessl agent, and opens a PR when it makes changes.
-6. Publish a release candidate:
+7. Run critical workflow evals when changing covered behavior:
+   - Read `docs/evals.md`.
+   - GitHub Actions → **Tessl evals** → keep `run-evals=false` for lint-only, or set `run-evals=true` for a manual advisory eval run.
+8. Publish a release candidate:
    - GitHub Actions → **Tessl registry publish** → `dry-run=true`.
    - Re-run with `dry-run=false` only after the dry run passes.
-7. Roll out to a consumer repo:
+9. Roll out to a consumer repo:
    - GitHub Actions → **Tessl consumer rollout**.
    - Enter `owner/repo` and the reviewed registry version.
 
@@ -111,6 +123,7 @@ access to the target repo.
 
 - Use deterministic checks on every PR.
 - Use Tessl review/lint on skill or plugin changes.
+- Use Tessl eval lint on eval changes, and manual Tessl eval runs on covered critical workflow changes.
 - Use Tessl change verify on harness invariant changes.
 - Use registry install smoke weekly and before demos.
 - Use Dark Factory dry-run weekly for health reports.

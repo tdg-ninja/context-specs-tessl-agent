@@ -1,0 +1,26 @@
+{
+  "context": "The response should preserve core Context Specs documentation and skill-entrypoint invariants.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "distinguishes_tessl_registry_install",
+      "description": "Says direct Tessl registry install uses tessl install cap1-context-specs/context-specs@<version> with an agent option when appropriate.",
+      "max_score": 3
+    },
+    {
+      "name": "distinguishes_compatibility_cli",
+      "description": "Explains that context-specs install/update/verify are compatibility CLI commands that mirror skills into Claude-compatible local files and write drift metadata, not the primary Tessl registry install surface.",
+      "max_score": 3
+    },
+    {
+      "name": "keeps_spec_planning_compact",
+      "description": "States that spec-planning/SKILL.md should remain a compact entrypoint and delegate detailed instructions to reference docs.",
+      "max_score": 3
+    },
+    {
+      "name": "preserves_implement_mainspec_modes",
+      "description": "Preserves the implement-mainspec rule that sequential mode handles three or fewer slices in order on the feature branch, while parallel mode handles more than three slices with dependency-aware worktrees, branches, PRs, and merges.",
+      "max_score": 4
+    }
+  ]
+}
