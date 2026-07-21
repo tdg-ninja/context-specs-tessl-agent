@@ -35,13 +35,14 @@ jobs:
       issues: write
     env:
       TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN || secrets.GITHUB_TOKEN }}
       ISSUE_NUMBER: ${{ github.event.issue.number || inputs['issue-number'] }}
       DRY_RUN: ${{ inputs['dry-run'] || 'false' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.DARK_FACTORY_GH_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Install Tessl CLI
         uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
