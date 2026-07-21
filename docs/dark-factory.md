@@ -155,6 +155,11 @@ confirms the exact required-check names and scope in GitHub branch protection.
   - Runs `tessl agent --print` against a file-backed prompt to implement the issue or write a diagnosis.
   - Runs deterministic post-agent checks and opens a PR that references the issue.
 
+- **`dark-factory-cloud-issue-dispatch.yml` — Tessl cloud issue implementation**
+  - Triggers when an issue receives the `dark-factory-cloud` label, when someone comments `/dark-factory-cloud`, or by manual dispatch with an issue number.
+  - Validates issue structure with deterministic local checks.
+  - Runs `tessl launch skill --cloud` for the implementation in a Tessl cloud sandbox, instead of running the local `tessl agent --print` workflow on the GitHub Actions runner.
+
 - **`tessl-consumer-rollout.yml` — Tessl registry rollout to another repo**
   - Checks out a target consumer repository.
   - Uses the Context Specs compatibility CLI to install `cap1-context-specs/context-specs@<version>` from the Tessl registry.
@@ -193,7 +198,8 @@ access to the target repo.
    - Set `create_maintenance_pr=true` only when you want the agent to make small harness/doc changes and open a PR.
 7. Originate work from a GitHub issue:
    - Create an issue with the **Dark Factory task** template or follow `docs/github-issue-contract.md`.
-   - Add the `dark-factory` label or comment `/dark-factory`.
+   - Add the `dark-factory` label or comment `/dark-factory` to run local implementation with `tessl agent --print` on the GitHub Actions runner.
+   - Add the `dark-factory-cloud` label or comment `/dark-factory-cloud` to run cloud implementation with `tessl launch skill --cloud` in a Tessl cloud sandbox.
    - The issue-dispatch workflow validates the issue shape, runs the Tessl agent, and opens a PR when it makes changes.
 8. Run critical workflow evals when changing covered behavior:
    - Read `docs/evals.md`.
