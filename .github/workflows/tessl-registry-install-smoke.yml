@@ -1,0 +1,40 @@
+name: Tessl registry install smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Context Specs registry version to install
+        required: false
+        default: '0.1.0'
+  schedule:
+    - cron: '23 9 * * 1'
+
+concurrency:
+  group: tessl-registry-install-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  registry-install-smoke:
+    name: Tessl registry install smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+      CONTEXT_SPECS_VERSION: ${{ github.event.inputs.version || '0.1.0' }}
+      CONTEXT_SPECS_PLUGIN: cap1-context-specs/context-specs
+      CONTEXT_SPECS_AGENT: claude-code
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Tessl CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Tessl registry install through compatibility CLI
+        run: scripts/registry-install-smoke.sh

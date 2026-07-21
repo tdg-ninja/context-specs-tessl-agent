@@ -7,7 +7,7 @@ on:
       - 'subagents/**'
       - 'catalog/**'
       - 'bin/context-specs.py'
-      - 'scripts/test-cli.sh'
+      - 'scripts/**'
       - '.github/workflows/validate-catalog.yml'
   push:
     branches: [main]
@@ -16,17 +16,27 @@ on:
       - 'subagents/**'
       - 'catalog/**'
       - 'bin/context-specs.py'
-      - 'scripts/test-cli.sh'
+      - 'scripts/**'
       - '.github/workflows/validate-catalog.yml'
 
 jobs:
-  validate:
+  deterministic-local-checks:
+    name: Non-Tessl deterministic catalog and CLI checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Regenerate catalog
+
+      - name: Non-Tessl Python syntax check
+        run: python3 -m py_compile bin/context-specs.py scripts/check-review-records.py scripts/update-review-record.py
+
+      - name: Non-Tessl regenerate local compatibility catalog
         run: python3 bin/context-specs.py catalog generate --source .
-      - name: Catalog is committed
+
+      - name: Non-Tessl check catalog is committed
         run: git diff --exit-code catalog/skills-manifest.json
-      - name: CLI smoke test
+
+      - name: Non-Tessl check review records match artifact digests
+        run: python3 scripts/check-review-records.py --root . --min-score 70
+
+      - name: Non-Tessl local-source CLI smoke test
         run: scripts/test-cli.sh

@@ -64,6 +64,8 @@ as you climb — but you can stop on any rung.
   an agent to give it a deeper model of the harness.)
 - **[Distribution and review model](./distribution.md)** — how reviewed skills are
   installed, pinned, updated, and verified across project repos.
+- **[Dark Factory](./dark-factory.md)** — the Tessl/GitHub Actions maintenance
+  harness for review, publish, install-smoke, and autonomous upkeep.
 
 ## Where the code lives
 

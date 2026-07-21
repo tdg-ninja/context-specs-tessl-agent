@@ -1,0 +1,61 @@
+name: Tessl plugin quality and review gate
+
+on:
+  pull_request:
+    paths:
+      - '.tessl-plugin/**'
+      - 'skills/**'
+      - 'subagents/**'
+      - 'catalog/**'
+      - 'bin/context-specs.py'
+      - 'scripts/**'
+      - '.github/workflows/tessl-plugin-quality.yml'
+  workflow_dispatch:
+    inputs:
+      min-review-score:
+        description: Minimum Tessl review score for changed skills
+        required: false
+        default: '70'
+
+concurrency:
+  group: tessl-plugin-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tessl-quality:
+    name: Tessl review/lint gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+      TESSL_WORKSPACE: cap1-context-specs
+      MIN_REVIEW_SCORE: ${{ github.event.inputs.min-review-score || '70' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Tessl CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Tessl plugin lint
+        run: tessl plugin lint .
+
+      - name: Tessl review changed skills
+        env:
+          BASE_REF: origin/${{ github.base_ref || 'main' }}
+        run: scripts/run-tessl-review-for-changed-skills.sh
+
+      - name: Upload Tessl review result JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tessl-review-results
+          path: .tessl/review-results/*.json
+          if-no-files-found: ignore

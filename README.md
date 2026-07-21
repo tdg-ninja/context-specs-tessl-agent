@@ -282,6 +282,8 @@ Use `--source <path>` only while testing local changes.
 - **[The full story](./docs/README.md)** — the six chapters, read in order.
 - **[Design invariants](./docs/invariants.md)** — the properties that make the
   harness safe to leave running.
+- **[Dark Factory](./docs/dark-factory.md)** — the Tessl/GitHub Actions automation
+  that reviews, publishes, smoke-tests, and maintains this plugin.
 
 ---
 
