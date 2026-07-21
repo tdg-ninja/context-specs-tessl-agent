@@ -121,7 +121,7 @@ jobs:
       - name: Tessl change risk publish advisory decision
         working-directory: _pr
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN || secrets.GITHUB_TOKEN }}
           REPO: ${{ env.REPO }}
           PR_NUMBER: ${{ steps.pr.outputs.pr-number }}
           ASSESSED_SHA: ${{ steps.pr.outputs.head-sha }}
