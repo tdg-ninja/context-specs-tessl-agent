@@ -11,3 +11,4 @@ __pycache__/
 # Runtime artifacts from Tessl/Dark Factory automation
 .tessl/dark-factory/
 .tessl/review-results/
+.tessl/memory/
