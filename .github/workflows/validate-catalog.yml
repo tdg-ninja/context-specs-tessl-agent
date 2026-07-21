@@ -9,6 +9,7 @@ on:
       - 'bin/context-specs.py'
       - 'scripts/**'
       - '.github/workflows/validate-catalog.yml'
+      - '.github/workflows/dark-factory-issue-dispatch.yml'
   push:
     branches: [main]
     paths:
@@ -18,6 +19,7 @@ on:
       - 'bin/context-specs.py'
       - 'scripts/**'
       - '.github/workflows/validate-catalog.yml'
+      - '.github/workflows/dark-factory-issue-dispatch.yml'
 
 jobs:
   deterministic-local-checks:

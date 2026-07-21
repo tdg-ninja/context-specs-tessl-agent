@@ -1,0 +1,188 @@
+name: Dark Factory issue dispatch
+
+on:
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue-number:
+        description: GitHub issue number to dispatch
+        required: true
+      dry-run:
+        description: Analyze and report without editing files
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+concurrency:
+  group: dark-factory-issue-${{ github.event.issue.number || inputs.issue-number }}
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    name: Dark Factory GitHub issue via Tessl agent
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'dark-factory') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request == null && contains(github.event.comment.body, '/dark-factory'))
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue-number }}
+      DRY_RUN: ${{ inputs.dry-run || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Tessl CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Non-Tessl capture GitHub issue context
+        run: |
+          set -euo pipefail
+          mkdir -p .tessl/dark-factory
+          gh issue view "$ISSUE_NUMBER" \
+            --json number,title,body,author,labels,comments,url,state \
+            > .tessl/dark-factory/issue.json
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          issue = json.loads(Path('.tessl/dark-factory/issue.json').read_text())
+          dry_run = os.environ.get('DRY_RUN', 'false')
+          labels = ', '.join(label['name'] for label in issue.get('labels', [])) or '(none)'
+          comments = issue.get('comments', [])
+          latest_comments = '\n\n'.join(
+              f"Comment by {c.get('author', {}).get('login', 'unknown')}:\n{c.get('body', '')}"
+              for c in comments[-5:]
+          ) or '(none)'
+
+          Path('.tessl/dark-factory/prompt.md').write_text(f"""You are the Dark Factory issue implementation agent for the Context Specs repository.
+
+          Read .tessl/dark-factory/issue.json for full GitHub issue context.
+
+          GitHub issue: #{issue['number']} — {issue['title']}
+          URL: {issue['url']}
+          Labels: {labels}
+          Dry run: {dry_run}
+
+          Issue body:
+          {issue.get('body') or '(empty)'}
+
+          Recent comments:
+          {latest_comments}
+
+          Required behavior:
+          - Make it explicit in the final report which steps used Tessl and which were deterministic local checks.
+          - If dry run is true, do not edit files; write .tessl/dark-factory/report.md only.
+          - If dry run is false, implement the issue with safe repo changes, run relevant checks, and write .tessl/dark-factory/report.md.
+          - Keep generated context in files under .tessl/dark-factory/; do not inline large logs into prompts.
+          - Do not publish Tessl registry versions from this workflow; use .github/workflows/tessl-registry-publish.yml.
+          - If the issue is unclear or unsafe to implement, write a diagnosis-first report and do not fabricate changes.
+          """)
+          PY
+
+      - name: Non-Tessl create work branch
+        if: env.DRY_RUN != 'true'
+        run: |
+          set -euo pipefail
+          branch="dark-factory/issue-${ISSUE_NUMBER}-${GITHUB_RUN_ID}"
+          git checkout -b "$branch"
+          echo "BRANCH=$branch" >> "$GITHUB_ENV"
+
+      - name: Tessl Dark Factory issue agent run
+        run: |
+          set -euo pipefail
+          if [ "$DRY_RUN" = "true" ]; then
+            tessl agent --print --no-session --permission-mode accept-edits \
+              "Read .tessl/dark-factory/prompt.md and perform the requested GitHub issue dispatch analysis." \
+              > .tessl/dark-factory/agent-output.txt < /dev/null
+          else
+            tessl agent --print --no-session --permission-mode yolo \
+              "Read .tessl/dark-factory/prompt.md and perform the requested GitHub issue implementation." \
+              > .tessl/dark-factory/agent-output.txt < /dev/null
+          fi
+          cat .tessl/dark-factory/agent-output.txt
+
+      - name: Non-Tessl post-agent checks
+        if: env.DRY_RUN != 'true'
+        run: |
+          set -euo pipefail
+          python3 -m py_compile bin/context-specs.py scripts/check-review-records.py scripts/update-review-record.py
+          python3 bin/context-specs.py catalog generate --source .
+          python3 scripts/check-review-records.py --root . --min-score 70
+          scripts/test-cli.sh
+          git diff --check
+
+      - name: Non-Tessl create pull request for issue implementation
+        if: env.DRY_RUN != 'true'
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            gh issue comment "$ISSUE_NUMBER" --body "Dark Factory ran but found no repo changes to propose. See this workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            exit 0
+          fi
+
+          git config user.name "dark-factory[bot]"
+          git config user.email "dark-factory[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Implement issue #$ISSUE_NUMBER via Dark Factory"
+          git push origin "$BRANCH"
+
+          if [ ! -s .tessl/dark-factory/report.md ]; then
+            cat > .tessl/dark-factory/report.md <<REPORT
+          ## Dark Factory issue dispatch
+
+          Implemented GitHub issue #$ISSUE_NUMBER.
+
+          ## What is Tessl here
+          - Tessl CLI authenticated with TESSL_TOKEN.
+          - Tessl agent performed the implementation step with \`tessl agent --print\`.
+
+          ## Non-Tessl checks
+          - Python syntax checks
+          - catalog regeneration
+          - review-record digest validation
+          - local-source CLI smoke test
+          - git diff whitespace check
+          REPORT
+          fi
+
+          gh pr create \
+            --title "Implement issue #$ISSUE_NUMBER via Dark Factory" \
+            --body-file .tessl/dark-factory/report.md \
+            --base main \
+            --head "$BRANCH"
+
+          gh issue comment "$ISSUE_NUMBER" --body "Dark Factory opened a PR for this issue: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pulls?q=head%3A$BRANCH"
+
+      - name: Non-Tessl comment dry-run report on issue
+        if: env.DRY_RUN == 'true'
+        run: |
+          if [ -s .tessl/dark-factory/report.md ]; then
+            gh issue comment "$ISSUE_NUMBER" --body-file .tessl/dark-factory/report.md
+          else
+            gh issue comment "$ISSUE_NUMBER" --body "Dark Factory dry-run completed. See workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi
+
+      - name: Upload Dark Factory issue dispatch artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dark-factory-issue-${{ env.ISSUE_NUMBER }}
+          path: .tessl/dark-factory/**
+          if-no-files-found: ignore

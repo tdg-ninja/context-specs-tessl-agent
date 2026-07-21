@@ -52,6 +52,12 @@ PR creation.
   - In write mode, allows safe repo edits and opens a PR.
   - Does not publish; publishing stays in `tessl-registry-publish.yml`.
 
+- **`dark-factory-issue-dispatch.yml` — GitHub issue-originated Dark Factory work**
+  - Triggers when an issue receives the `dark-factory` label, when someone comments `/dark-factory`, or by manual dispatch with an issue number.
+  - Captures the issue body/comments into `.tessl/dark-factory/issue.json`.
+  - Runs `tessl agent --print` against a file-backed prompt to implement the issue or write a diagnosis.
+  - Runs deterministic post-agent checks and opens a PR that references the issue.
+
 - **`tessl-consumer-rollout.yml` — Tessl registry rollout to another repo**
   - Checks out a target consumer repository.
   - Uses the Context Specs compatibility CLI to install `cap1-context-specs/context-specs@<version>` from the Tessl registry.
@@ -60,10 +66,12 @@ PR creation.
 ## Required GitHub secrets
 
 - **`TESSL_TOKEN`** — required for all workflows that call Tessl.
+- **`DARK_FACTORY_GH_TOKEN`** — required only for cross-repository consumer rollout.
 
-The default `GITHUB_TOKEN` is used only by the Dark Factory maintenance workflow
-when it needs to push a branch and open a PR. Cross-repository rollout should use
-`DARK_FACTORY_GH_TOKEN` with write access to the target repo.
+The default `GITHUB_TOKEN` is used by same-repository Dark Factory maintenance and
+issue-dispatch workflows when they push a branch, open a PR, or comment on an issue.
+Cross-repository rollout should use `DARK_FACTORY_GH_TOKEN` with write access to
+the target repo.
 
 ## Manual demo
 
@@ -77,10 +85,14 @@ when it needs to push a branch and open a PR. Cross-repository rollout should us
    - `scripts/registry-install-smoke.sh`
 4. Run Dark Factory in report mode:
    - GitHub Actions → **Dark Factory maintenance** → `dry-run=true`.
-5. Publish a release candidate:
+5. Originate work from a GitHub issue:
+   - Create or open an issue.
+   - Add the `dark-factory` label or comment `/dark-factory`.
+   - The issue-dispatch workflow runs the Tessl agent and opens a PR when it makes changes.
+6. Publish a release candidate:
    - GitHub Actions → **Tessl registry publish** → `dry-run=true`.
    - Re-run with `dry-run=false` only after the dry run passes.
-6. Roll out to a consumer repo:
+7. Roll out to a consumer repo:
    - GitHub Actions → **Tessl consumer rollout**.
    - Enter `owner/repo` and the reviewed registry version.
 
@@ -91,4 +103,5 @@ when it needs to push a branch and open a PR. Cross-repository rollout should us
 - Use registry install smoke weekly and before demos.
 - Use Dark Factory dry-run weekly for health reports.
 - Use Dark Factory write mode only when you want an automated maintenance PR.
+- Use GitHub issues plus the `dark-factory` label or `/dark-factory` comment for issue-originated work.
 - Use publish workflow manually after review metadata and lint are clean.
