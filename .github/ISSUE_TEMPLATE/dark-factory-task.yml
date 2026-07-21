@@ -1,0 +1,59 @@
+name: Dark Factory task
+about: Dispatchable work order for the Tessl Dark Factory agent
+labels: [dark-factory]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for work that should be implemented or diagnosed by the Dark Factory Tessl agent.
+        The issue-dispatch workflow validates these sections before editing files.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should change, and why?
+      placeholder: Make the README clearer about when to use tessl install versus context-specs install.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Files, directories, workflows, docs, or systems likely involved. Include out-of-scope boundaries when relevant.
+      placeholder: README.md, docs/dark-factory.md. Do not publish a new registry version.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Observable outcomes and checks. Use checkboxes.
+      placeholder: |
+        - [ ] README has a short install-path section.
+        - [ ] It distinguishes Tessl registry install from Claude compatibility install.
+        - [ ] Deterministic checks pass.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: What the agent must not do, release boundaries, compatibility requirements, or unknowns.
+      placeholder: Do not publish from issue dispatch. If unclear, write a diagnosis-first report.
+    validations:
+      required: true
+  - type: textarea
+    id: tessl
+    attributes:
+      label: What is Tessl here?
+      description: Optional. Name Tessl surfaces this work should touch.
+      placeholder: tessl agent for implementation; non-Tessl deterministic checks for validation; no tessl plugin publish.
+    validations:
+      required: false
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Optional links, command output, screenshots, or examples.
+    validations:
+      required: false

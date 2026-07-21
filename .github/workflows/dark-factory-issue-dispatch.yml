@@ -58,6 +58,70 @@ jobs:
           gh issue view "$ISSUE_NUMBER" \
             --json number,title,body,author,labels,comments,url,state \
             > .tessl/dark-factory/issue.json
+
+      - name: Non-Tessl deterministic issue structure validation
+        id: issue-structure
+        run: |
+          set -euo pipefail
+          trigger="manual"
+          if [ "${{ github.event_name }}" = "issues" ]; then trigger="label"; fi
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then trigger="comment"; fi
+          python3 scripts/validate-github-issue.py \
+            --issue-json .tessl/dark-factory/issue.json \
+            --trigger "$trigger" \
+            --output .tessl/dark-factory/issue-structure.md
+
+      - name: Tessl issue structure validation
+        run: |
+          set -euo pipefail
+          tessl agent --print --no-session --permission-mode accept-edits \
+            "Read docs/github-issue-contract.md, .tessl/dark-factory/issue.json, and .tessl/dark-factory/issue-structure.md. Validate whether this GitHub issue is a dispatchable Dark Factory work order. Write .tessl/dark-factory/tessl-issue-validation.json with keys valid(boolean), missing(array), reasoning(string), and write a concise markdown report to .tessl/dark-factory/tessl-issue-validation.md. Do not edit repo source files." \
+            > .tessl/dark-factory/tessl-issue-validation-output.txt < /dev/null
+          cat .tessl/dark-factory/tessl-issue-validation-output.txt
+
+      - name: Non-Tessl combine issue validation decisions
+        id: validation-decision
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          deterministic_valid = os.environ.get('DETERMINISTIC_VALID') == 'true'
+          tessl_path = Path('.tessl/dark-factory/tessl-issue-validation.json')
+          tessl_valid = False
+          if tessl_path.exists():
+              try:
+                  tessl_valid = json.loads(tessl_path.read_text()).get('valid') is True
+              except json.JSONDecodeError:
+                  tessl_valid = False
+          valid = deterministic_valid and tessl_valid
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as f:
+              f.write(f"valid={'true' if valid else 'false'}\n")
+          print(f"Deterministic issue validation: {deterministic_valid}")
+          print(f"Tessl issue validation: {tessl_valid}")
+          print(f"Combined issue validation: {valid}")
+          PY
+        env:
+          DETERMINISTIC_VALID: ${{ steps.issue-structure.outputs.valid }}
+
+      - name: Non-Tessl stop invalid issue dispatch
+        if: steps.validation-decision.outputs.valid != 'true'
+        run: |
+          set -euo pipefail
+          cat .tessl/dark-factory/issue-structure.md > .tessl/dark-factory/report.md
+          printf '\n## Tessl validation\n\n' >> .tessl/dark-factory/report.md
+          if [ -s .tessl/dark-factory/tessl-issue-validation.md ]; then
+            cat .tessl/dark-factory/tessl-issue-validation.md >> .tessl/dark-factory/report.md
+          else
+            cat .tessl/dark-factory/tessl-issue-validation-output.txt >> .tessl/dark-factory/report.md
+          fi
+          gh issue comment "$ISSUE_NUMBER" --body-file .tessl/dark-factory/report.md
+          exit 1
+
+      - name: Non-Tessl write implementation prompt
+        run: |
+          set -euo pipefail
           python3 - <<'PY'
           import json, os
           from pathlib import Path
@@ -70,6 +134,8 @@ jobs:
               f"Comment by {c.get('author', {}).get('login', 'unknown')}:\n{c.get('body', '')}"
               for c in comments[-5:]
           ) or '(none)'
+          structure = Path('.tessl/dark-factory/issue-structure.md').read_text()
+          tessl_validation = Path('.tessl/dark-factory/tessl-issue-validation-output.txt').read_text()
 
           Path('.tessl/dark-factory/prompt.md').write_text(f"""You are the Dark Factory issue implementation agent for the Context Specs repository.
 
@@ -80,6 +146,12 @@ jobs:
           Labels: {labels}
           Dry run: {dry_run}
 
+          Deterministic issue structure validation:
+          {structure}
+
+          Tessl issue structure validation:
+          {tessl_validation}
+
           Issue body:
           {issue.get('body') or '(empty)'}
 
@@ -87,6 +159,7 @@ jobs:
           {latest_comments}
 
           Required behavior:
+          - Before making changes, confirm the issue satisfies docs/github-issue-contract.md; if not, write a diagnosis-first report and do not edit repo files.
           - Make it explicit in the final report which steps used Tessl and which were deterministic local checks.
           - If dry run is true, do not edit files; write .tessl/dark-factory/report.md only.
           - If dry run is false, implement the issue with safe repo changes, run relevant checks, and write .tessl/dark-factory/report.md.
