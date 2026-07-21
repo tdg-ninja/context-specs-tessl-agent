@@ -17,9 +17,9 @@ on:
       agent:
         description: Cloud agent backend
         required: false
-        default: 'tessl-agent'
+        default: 'claude-code'
         type: choice
-        options: ['tessl-agent', 'claude-code', 'codex', 'cursor']
+        options: ['claude-code', 'codex', 'cursor', 'gemini']
 
 concurrency:
   group: dark-factory-cloud-issue-${{ github.event.issue.number || inputs['issue-number'] }}
@@ -43,7 +43,7 @@ jobs:
       CLOUD_GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN || secrets.GITHUB_TOKEN }}
       ISSUE_NUMBER: ${{ github.event.issue.number || inputs['issue-number'] }}
       CLOUD_SKILL: ${{ inputs.skill || 'cap1-context-specs/implement-issue@0.1.0#implement-issue' }}
-      CLOUD_AGENT: ${{ inputs.agent || 'tessl-agent' }}
+      CLOUD_AGENT: ${{ inputs.agent || 'claude-code' }}
     steps:
       - uses: actions/checkout@v4
         with:
