@@ -19,6 +19,64 @@ Everything else is deterministic local glue: Python digest checks, catalog
 generation, compatibility mirroring into `.claude/`, shell smoke tests, and GitHub
 PR creation.
 
+## Human review routing
+
+Dark Factory PRs are authored by automation but merged by people. The fork-local
+review owner is `@tdg-ninja`, verified as an administrator of
+`tdg-ninja/context-specs-tessl-agent`. `.github/CODEOWNERS` routes all files to
+that owner and repeats ownership for governance-sensitive Dark Factory surfaces.
+
+Require human review from `@tdg-ninja` before merging PRs that touch any of these
+risky categories:
+
+- **Workflow changes:** `.github/workflows/**` or reviewer-routing files.
+- **Auth or token changes:** GitHub permissions, secrets, token names, or setup steps.
+- **Verifier policy changes:** `verifiers/**`, `tessl.json`, or verifier-scoped docs.
+- **Registry publishing changes:** `.tessl-plugin/**`, `tessl-registry-publish.yml`, or publish/install docs.
+- **Dark Factory dispatch changes:** issue validation, prompt wiring, PR creation, or branch/publish behavior.
+
+Use Tessl PR gates as inputs to review, not as replacements for review. A failing
+Tessl gate blocks merge until fixed; a passing Tessl gate still needs the human
+review above for risky categories.
+
+## Branch protection recommendations for `main`
+
+Recommended required checks:
+
+- **`Non-Tessl deterministic catalog and CLI checks`:** require on PRs that touch
+  skills, subagents, catalog data, CLI code, scripts, or workflow dispatch glue.
+- **`Tessl change verify harness invariants`:** require on PRs that touch
+  workflows, verifier policy, harness docs, issue validation, `tessl.json`,
+  skills, or review metadata.
+- **`Tessl review/lint gate`:** require on PRs that touch plugin packaging,
+  skills, subagents, catalog data, CLI code, scripts, or the quality workflow.
+
+Recommended branch protection settings:
+
+- Require a pull request before merging into `main`.
+- Require at least one approval from Code Owners.
+- Require review from Code Owners.
+- Dismiss stale approvals when new commits are pushed.
+- Require conversation resolution before merge.
+- Require branches to be up to date before merge when the required checks are enabled.
+- Do not enable auto-merge for Dark Factory PRs.
+
+Advisory checks and workflows:
+
+- **`Dark Factory maintenance`:** advisory scheduled/reporting loop; do not make it
+  a required merge check.
+- **`Dark Factory issue dispatch`:** automation entrypoint that opens work PRs;
+  do not make it a required merge check.
+- **`Tessl registry install smoke`:** advisory installability signal for demos,
+  releases, and scheduled health checks.
+- **`Tessl registry publish`:** manual release workflow only; never required for
+  ordinary PR merge.
+- **`Tessl consumer rollout`:** manual downstream rollout workflow only; never
+  required for this repository's `main` branch.
+
+Do not enforce these settings through an API call until the repository owner
+confirms the exact required-check names and scope in GitHub branch protection.
+
 ## GitHub Actions
 
 - **`validate-catalog.yml` — Non-Tessl deterministic checks**
