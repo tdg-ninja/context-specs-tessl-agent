@@ -1,0 +1,18 @@
+{
+  "name": "Changed skills keep review metadata",
+  "instruction": "Changes to committed skill definitions must keep corresponding Tessl review metadata under `catalog/reviews/`.",
+  "relevant_when": "Diff that adds, removes, renames, or changes files matching `skills/*/SKILL.md` or files under `catalog/reviews/`.",
+  "context": "The Context Specs catalog treats review records as durable evidence that each skill remains reviewed and meets the minimum quality bar.",
+  "scope": "diff",
+  "scope_reason": "The invariant depends on the relationship between changed skill files and their companion review-record files.",
+  "checklist": [
+    {
+      "name": "changed-skill-has-review-record",
+      "rule": "For every changed `skills/<name>/SKILL.md`, the diff includes or preserves a matching `catalog/reviews/skills__<name>.json` review record unless the skill is deleted."
+    },
+    {
+      "name": "new-skill-review-record-looks-current",
+      "rule": "When a skill is added or substantially changed, the matching review record is present in the committed catalog review directory rather than only in `.tessl/review-results/`."
+    }
+  ]
+}

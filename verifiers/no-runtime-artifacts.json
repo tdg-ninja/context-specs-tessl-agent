@@ -1,0 +1,22 @@
+{
+  "name": "Runtime artifacts stay out of committed changes",
+  "instruction": "Committed changes must not include Dark Factory or Tessl review runtime artifacts under `.tessl/dark-factory/` or `.tessl/review-results/`.",
+  "relevant_when": "Diff that adds or modifies repository files, especially files under `.tessl/` or changes to ignore rules and CI commit steps.",
+  "context": "Runtime artifacts are per-run evidence and should be uploaded or ignored rather than committed to the repository.",
+  "scope": "diff",
+  "scope_reason": "The violation is visible from the changed path list and diff, not from one source file.",
+  "checklist": [
+    {
+      "name": "no-dark-factory-artifacts",
+      "rule": "The diff does not add or modify files under `.tessl/dark-factory/`."
+    },
+    {
+      "name": "no-review-result-artifacts",
+      "rule": "The diff does not add or modify files under `.tessl/review-results/`."
+    },
+    {
+      "name": "runtime-artifacts-remain-ignored",
+      "rule": "Ignore rules or commit scripts still prevent `.tessl/dark-factory/` and `.tessl/review-results/` artifacts from being committed."
+    }
+  ]
+}

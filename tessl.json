@@ -1,0 +1,56 @@
+{
+  "verify": {
+    "groups": {
+      "harness-invariants": {
+        "path": "verifiers/*.json",
+        "level": "error",
+        "include": [
+          ".github/workflows/*.yml",
+          ".github/workflows/*.yaml",
+          ".gitignore",
+          ".tessl/dark-factory/**",
+          ".tessl/review-results/**",
+          "docs/dark-factory.md",
+          "scripts/validate-github-issue.py",
+          "skills/**/SKILL.md",
+          "catalog/reviews/*.json"
+        ],
+        "verifiers": {
+          "compact-skill-entrypoints": {
+            "include": [
+              "skills/**/SKILL.md"
+            ]
+          },
+          "dark-factory-issue-validation": {
+            "include": [
+              ".github/workflows/dark-factory-issue-dispatch.yml",
+              "docs/dark-factory.md",
+              "scripts/validate-github-issue.py"
+            ]
+          },
+          "github-actions-step-labels": {
+            "include": [
+              ".github/workflows/*.yml",
+              ".github/workflows/*.yaml"
+            ]
+          },
+          "no-runtime-artifacts": {
+            "include": [
+              ".gitignore",
+              ".github/workflows/*.yml",
+              ".github/workflows/*.yaml",
+              ".tessl/dark-factory/**",
+              ".tessl/review-results/**"
+            ]
+          },
+          "skill-review-metadata": {
+            "include": [
+              "skills/**/SKILL.md",
+              "catalog/reviews/*.json"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

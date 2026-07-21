@@ -1,0 +1,18 @@
+{
+  "name": "GitHub Actions Tessl and Non-Tessl step labels",
+  "instruction": "GitHub Actions workflow steps that call Tessl must be named with a `Tessl ...` prefix, and deterministic local check steps must be named with a `Non-Tessl ...` prefix.",
+  "relevant_when": "YAML file under .github/workflows/ that defines GitHub Actions steps with `name:` and `run:` entries.",
+  "context": "Clear labels make it obvious which CI failures come from Tessl surfaces and which come from deterministic local checks.",
+  "scope": "file",
+  "scope_reason": "Each workflow file contains the step names and commands needed to judge this invariant.",
+  "checklist": [
+    {
+      "name": "tessl-steps-named-tessl",
+      "rule": "Every named step whose run script invokes the `tessl` CLI has a name beginning with `Tessl `, except steps whose purpose is installing the Tessl CLI action."
+    },
+    {
+      "name": "deterministic-checks-named-non-tessl",
+      "rule": "Every named step whose run script performs deterministic local checks such as Python compilation, catalog generation, digest validation, shell smoke tests, git diff checks, or issue JSON processing has a name beginning with `Non-Tessl `."
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+name: Tessl change verify harness invariants
+
+on:
+  pull_request:
+    paths:
+      - 'tessl.json'
+      - 'verifiers/**'
+      - 'skills/**'
+      - 'catalog/reviews/**'
+      - 'docs/dark-factory.md'
+      - 'scripts/validate-github-issue.py'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+concurrency:
+  group: tessl-change-verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tessl-change-verify:
+    name: Tessl change verify harness invariants
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tessl install CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Tessl lint verifier JSON
+        run: |
+          set -euo pipefail
+          for verifier in verifiers/*.json; do
+            tessl change verify lint "$verifier"
+          done
+
+      - name: Tessl dry-run verifier scope
+        run: |
+          set -euo pipefail
+          tessl change verify --dry-run --all --show-files
+          tessl change verify --dry-run --show-files --base "$BASE_REF" .github/workflows
+        env:
+          BASE_REF: origin/${{ github.base_ref || 'main' }}
+
+      - name: Tessl change verify
+        env:
+          BASE_REF: origin/${{ github.base_ref || 'main' }}
+        run: |
+          set -euo pipefail
+          tessl change verify --github --base "$BASE_REF" --max-calls 80
+          tessl change verify --github --base "$BASE_REF" --max-calls 20 .github/workflows

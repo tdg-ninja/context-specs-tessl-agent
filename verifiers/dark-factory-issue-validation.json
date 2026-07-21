@@ -1,0 +1,18 @@
+{
+  "name": "Dark Factory issue dispatch validates before implementation",
+  "instruction": "Dark Factory issue dispatch must validate GitHub issue structure before any Tessl agent implementation step can edit repository files.",
+  "relevant_when": "GitHub Actions workflow file or Dark Factory operating documentation that describes issue-originated Dark Factory dispatch.",
+  "context": "Issue-originated automation should stop unclear work orders before implementation so agents do not fabricate unsafe changes.",
+  "scope": "file",
+  "scope_reason": "The workflow or operating note contains the dispatch sequence and validation gate evidence.",
+  "checklist": [
+    {
+      "name": "validation-before-agent-implementation",
+      "rule": "The dispatch sequence includes issue-structure validation before the Tessl agent implementation step."
+    },
+    {
+      "name": "invalid-dispatch-stops-before-edits",
+      "rule": "The dispatch sequence explicitly stops or reports invalid issues before repository source files are edited."
+    }
+  ]
+}
