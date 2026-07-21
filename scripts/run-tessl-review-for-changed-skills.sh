@@ -9,11 +9,17 @@ if ! git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
   BASE_REF="HEAD~1"
 fi
 
-mapfile -t skills < <(
-  git diff --name-only "$BASE_REF"...HEAD -- skills/ \
-    | awk -F/ 'NF >= 2 && $1 == "skills" { print $2 }' \
-    | sort -u
-)
+skills_file="$(mktemp)"
+trap 'rm -f "$skills_file"' EXIT
+
+git diff --name-only "$BASE_REF"...HEAD -- skills/ \
+  | awk -F/ 'NF >= 2 && $1 == "skills" { print $2 }' \
+  | sort -u > "$skills_file"
+
+skills=()
+while IFS= read -r skill; do
+  [ -n "$skill" ] && skills+=("$skill")
+done < "$skills_file"
 
 if [ "${#skills[@]}" -eq 0 ]; then
   echo "No changed skills detected relative to $BASE_REF."
