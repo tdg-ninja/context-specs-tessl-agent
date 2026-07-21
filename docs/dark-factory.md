@@ -68,12 +68,14 @@ PR creation.
 ## Required GitHub secrets
 
 - **`TESSL_TOKEN`** — required for all workflows that call Tessl.
-- **`DARK_FACTORY_GH_TOKEN`** — required only for cross-repository consumer rollout.
+- **`DARK_FACTORY_GH_TOKEN`** — required for workflows that create or update workflow files, and for cross-repository consumer rollout. Use a token with `repo` and `workflow` scopes.
 
-The default `GITHUB_TOKEN` is used by same-repository Dark Factory maintenance and
-issue-dispatch workflows when they push a branch, open a PR, or comment on an issue.
-Cross-repository rollout should use `DARK_FACTORY_GH_TOKEN` with write access to
-the target repo.
+Dark Factory maintenance and issue-dispatch workflows prefer `DARK_FACTORY_GH_TOKEN`
+when pushing branches and opening PRs, then fall back to `GITHUB_TOKEN`. The
+fallback works for ordinary same-repo file changes, but GitHub blocks app tokens
+from creating or updating `.github/workflows/**` unless the token has `workflow`
+scope. Cross-repository rollout should use `DARK_FACTORY_GH_TOKEN` with write
+access to the target repo.
 
 ## Manual demo
 
