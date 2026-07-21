@@ -1,0 +1,142 @@
+name: Dark Factory cloud issue dispatch
+
+on:
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue-number:
+        description: GitHub issue number to dispatch in Tessl cloud
+        required: true
+      skill:
+        description: Registry skill to launch in the Tessl cloud sandbox
+        required: false
+        default: 'tessl-fe/implement-issue@0.1.0#implement-issue'
+      agent:
+        description: Cloud agent backend
+        required: false
+        default: 'tessl-agent'
+        type: choice
+        options: ['tessl-agent', 'claude-code', 'codex', 'cursor']
+
+concurrency:
+  group: dark-factory-cloud-issue-${{ github.event.issue.number || inputs['issue-number'] }}
+  cancel-in-progress: false
+
+jobs:
+  cloud-dispatch:
+    name: Dark Factory cloud implementation via Tessl launch skill
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'dark-factory-cloud') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request == null && contains(github.event.comment.body, '/dark-factory-cloud'))
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CLOUD_GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN || secrets.GITHUB_TOKEN }}
+      ISSUE_NUMBER: ${{ github.event.issue.number || inputs['issue-number'] }}
+      CLOUD_SKILL: ${{ inputs.skill || 'tessl-fe/implement-issue@0.1.0#implement-issue' }}
+      CLOUD_AGENT: ${{ inputs.agent || 'tessl-agent' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Tessl CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Non-Tessl capture GitHub issue context
+        run: |
+          set -euo pipefail
+          mkdir -p .tessl/dark-factory-cloud
+          gh issue view "$ISSUE_NUMBER" \
+            --json number,title,body,author,labels,comments,url,state \
+            > .tessl/dark-factory-cloud/issue.json
+
+      - name: Non-Tessl deterministic issue structure validation
+        id: issue-structure
+        run: |
+          set -euo pipefail
+          trigger="manual"
+          if [ "${{ github.event_name }}" = "issues" ]; then trigger="label"; fi
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then trigger="comment"; fi
+          python3 scripts/validate-github-issue.py \
+            --issue-json .tessl/dark-factory-cloud/issue.json \
+            --trigger "$trigger" \
+            --dispatch-label dark-factory-cloud \
+            --output .tessl/dark-factory-cloud/issue-structure.md
+
+      - name: Non-Tessl stop invalid cloud dispatch
+        if: steps.issue-structure.outputs.valid != 'true'
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --body-file .tessl/dark-factory-cloud/issue-structure.md
+          echo "Issue is not dispatchable yet; commented with validation report."
+
+      - name: Non-Tessl write cloud env file
+        if: steps.issue-structure.outputs.valid == 'true'
+        run: |
+          set -euo pipefail
+          cat > .tessl/dark-factory-cloud/cloud.env <<EOF
+          GH_TOKEN=$CLOUD_GH_TOKEN
+          GITHUB_TOKEN=$CLOUD_GH_TOKEN
+          ISSUE_NUMBER=$ISSUE_NUMBER
+          EOF
+
+      - name: Tessl cloud skill launch
+        if: steps.issue-structure.outputs.valid == 'true'
+        run: |
+          set -euo pipefail
+          instructions="Implement GitHub issue #${ISSUE_NUMBER} in tdg-ninja/context-specs-tessl-agent. Read the issue with gh issue view ${ISSUE_NUMBER}. Follow the issue body exactly. Open a PR that closes #${ISSUE_NUMBER}. Do not publish Tessl registry versions."
+          tessl launch skill "$CLOUD_SKILL" \
+            --cloud \
+            --repo tdg-ninja/context-specs-tessl-agent \
+            --base-branch main \
+            --workspace cap1-context-specs \
+            --agent "$CLOUD_AGENT" \
+            --env-file .tessl/dark-factory-cloud/cloud.env \
+            --label "dark-factory-cloud-issue-${ISSUE_NUMBER}-${GITHUB_RUN_ID}" \
+            --instructions "$instructions" \
+            --wait \
+            --json \
+            | tee .tessl/dark-factory-cloud/launch.json
+
+      - name: Non-Tessl comment cloud launch result
+        if: always() && steps.issue-structure.outputs.valid == 'true'
+        run: |
+          set -euo pipefail
+          if [ -s .tessl/dark-factory-cloud/launch.json ]; then
+            cat > .tessl/dark-factory-cloud/comment.md <<EOF
+          Dark Factory cloud dispatch launched for issue #$ISSUE_NUMBER.
+
+          ## What is Tessl here
+          - Used \`tessl launch skill\` with \`--cloud\`.
+          - Skill: \`$CLOUD_SKILL\`.
+          - Agent: \`$CLOUD_AGENT\`.
+          - Target repo: \`tdg-ninja/context-specs-tessl-agent\`.
+
+          ## Run
+          $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          EOF
+            gh issue comment "$ISSUE_NUMBER" --body-file .tessl/dark-factory-cloud/comment.md
+          fi
+
+      - name: Upload Dark Factory cloud dispatch artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dark-factory-cloud-issue-${{ env.ISSUE_NUMBER }}
+          path: .tessl/dark-factory-cloud/**
+          if-no-files-found: ignore
