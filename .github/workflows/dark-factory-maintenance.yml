@@ -121,7 +121,8 @@ jobs:
           git config user.name "dark-factory[bot]"
           git config user.email "dark-factory[bot]@users.noreply.github.com"
           git checkout -b "$branch"
-          git add -A -- ':!.tessl/dark-factory/**' ':!.tessl/review-results/**'
+          git add -A
+          git reset -q -- .tessl/dark-factory .tessl/review-results || true
           git commit -m "Dark Factory maintenance updates"
           git push origin "$branch"
           gh pr create \
