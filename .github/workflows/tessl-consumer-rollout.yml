@@ -1,0 +1,107 @@
+name: Tessl consumer rollout
+
+on:
+  workflow_dispatch:
+    inputs:
+      target-repository:
+        description: owner/repo to update with the reviewed Context Specs registry version
+        required: true
+      version:
+        description: Context Specs registry version to install
+        required: true
+        default: '0.1.0'
+      branch-prefix:
+        description: Branch prefix for the rollout PR
+        required: false
+        default: 'context-specs/update'
+
+concurrency:
+  group: tessl-consumer-rollout-${{ inputs.target-repository }}
+  cancel-in-progress: false
+
+jobs:
+  rollout:
+    name: Tessl registry rollout to consumer repo
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+      GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN }}
+      CONTEXT_SPECS_VERSION: ${{ inputs.version }}
+      TARGET_REPOSITORY: ${{ inputs.target-repository }}
+      BRANCH_PREFIX: ${{ inputs.branch-prefix }}
+    steps:
+      - name: Checkout consumer repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.target-repository }}
+          token: ${{ secrets.DARK_FACTORY_GH_TOKEN }}
+          path: consumer
+          fetch-depth: 0
+
+      - name: Checkout Context Specs source for wrapper CLI and subagent compatibility
+        uses: actions/checkout@v4
+        with:
+          path: context-specs-source
+
+      - name: Install Tessl CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Tessl registry install into consumer repo through compatibility CLI
+        working-directory: consumer
+        run: |
+          python3 ../context-specs-source/bin/context-specs.py install \
+            --target . \
+            --plugin cap1-context-specs/context-specs \
+            --version "$CONTEXT_SPECS_VERSION" \
+            --agent claude-code
+
+      - name: Non-Tessl verify installed compatibility files in consumer repo
+        working-directory: consumer
+        run: python3 ../context-specs-source/bin/context-specs.py verify --target .
+
+      - name: Create consumer rollout pull request
+        working-directory: consumer
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "Consumer repo already has Context Specs $CONTEXT_SPECS_VERSION."
+            exit 0
+          fi
+
+          safe_version="${CONTEXT_SPECS_VERSION//[^A-Za-z0-9._-]/-}"
+          branch="$BRANCH_PREFIX-$safe_version-${GITHUB_RUN_ID}"
+          git config user.name "dark-factory[bot]"
+          git config user.email "dark-factory[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add -A
+          git commit -m "Update Context Specs to $CONTEXT_SPECS_VERSION"
+          git push origin "$branch"
+
+          cat > /tmp/context-specs-rollout-pr.md <<PR
+          ## Summary
+          - Install reviewed Tessl registry plugin cap1-context-specs/context-specs@$CONTEXT_SPECS_VERSION
+          - Refresh Context Specs compatibility files under .claude/
+          - Refresh .context-specs/manifest.json lockfile
+
+          ## What is Tessl here
+          - Tessl registry source: cap1-context-specs/context-specs@$CONTEXT_SPECS_VERSION
+          - Tessl install command was run through the Context Specs compatibility CLI
+
+          ## Non-Tessl verification
+          - context-specs verify checked local file digests and compatibility layout
+          PR
+
+          gh pr create \
+            --repo "$TARGET_REPOSITORY" \
+            --title "Update Context Specs to $CONTEXT_SPECS_VERSION" \
+            --body-file /tmp/context-specs-rollout-pr.md \
+            --base main \
+            --head "$branch"

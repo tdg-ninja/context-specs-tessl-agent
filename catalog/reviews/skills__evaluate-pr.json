@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "artifact": "skills/evaluate-pr",
+  "sha256": "a9ccf48b760d157d83884af20e5f96965654ead5a0fd73c0781807f562d43f4a",
+  "status": "reviewed",
+  "reviewer": "tessl/default-skill-review@0.1.0",
+  "reviewRunId": "019f81f3-ed59-7087-8253-e1bb36cd0059",
+  "score": 88,
+  "reviewedAt": "2026-07-20T23:54:34.713Z",
+  "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish."
+}

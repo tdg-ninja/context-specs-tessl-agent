@@ -37,7 +37,7 @@ session is exactly the context decay Chapter 1 warned about.
 
 An **Expert** externalizes it. You create one from your own documentation —
 framework docs, an internal library guide, architecture notes — with
-[`/expert-sdd-creator`](../skills/sdd/expert-sdd-creator/SKILL.md), and
+[`/expert-sdd-creator`](../skills/expert-sdd-creator/SKILL.md), and
 it generates a complete, progressively-disclosed knowledge module:
 
 ```
@@ -69,7 +69,7 @@ Two properties make Experts more than a docs folder:
 
 ## Specs — planning lifted out of the window
 
-When you run [`/spec-planning`](../skills/sdd/spec-planning/SKILL.md),
+When you run [`/spec-planning`](../skills/spec-planning/SKILL.md),
 the planner researches the actual codebase (grounding the plan in reality, not
 guesswork), pulls in any Experts whose triggers match, and writes the plan to
 disk as two kinds of file:
@@ -109,12 +109,12 @@ disclosure made structural: the agent is fed **only the current slice**, never
 the whole feature, so its window stays small and focused. For the orchestrator,
 the dependencies form a DAG — and a DAG can be parallelized. Every mainspec
 carries a **Slice Dependency Map** (a table plus a Mermaid graph), and
-[`compute_tiers.py`](../skills/sdd/implement-mainspec/scripts/compute_tiers.py)
+[`compute_tiers.py`](../skills/implement-mainspec/scripts/compute_tiers.py)
 topologically sorts it to find which slices can run concurrently.
 
 ## Validation — consensus before code
 
-A spec is a plan, and plans have blind spots. [`/spec-validate`](../skills/sdd/spec-validate/SKILL.md)
+A spec is a plan, and plans have blind spots. [`/spec-validate`](../skills/spec-validate/SKILL.md)
 hardens it before a line of code is written, in three phases:
 
 1. **Multi-agent consensus.** Spawn 3+ Opus subagents that independently review
@@ -140,7 +140,7 @@ coin flip.
 
 ![Signal](../signal.png)
 
-[`/implement-slice`](../skills/sdd/implement-slice/SKILL.md) implements
+[`/implement-slice`](../skills/implement-slice/SKILL.md) implements
 one slice as a tight loop: implement the code, then run the slice's **Signal** to
 check it behaves, iterating until the signal validates. Signal is the runtime
 counterpart to the Expert's up-front curation — where the Expert shapes context
@@ -149,7 +149,7 @@ signal, but an Expert can define richer ones: hit an endpoint and check the
 response, run browser automation and screenshot it, deploy to a lower
 environment and read the logs.
 
-[`/implement-mainspec`](../skills/sdd/implement-mainspec/SKILL.md)
+[`/implement-mainspec`](../skills/implement-mainspec/SKILL.md)
 orchestrates the whole feature and auto-detects how to run it:
 
 - **Sequential** (≤3 slices) — one slice at a time, committed directly to the

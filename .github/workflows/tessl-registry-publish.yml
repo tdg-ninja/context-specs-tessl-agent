@@ -1,0 +1,75 @@
+name: Tessl registry publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish, matching .tessl-plugin/plugin.json unless bump is used
+        required: false
+        default: '0.1.0'
+      dry-run:
+        description: Run Tessl publish checks without publishing
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+      bump:
+        description: Optional Tessl semver bump if the version already exists
+        required: false
+        default: ''
+        type: choice
+        options: ['', 'patch', 'minor', 'major']
+
+concurrency:
+  group: tessl-registry-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Tessl registry publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+      TESSL_WORKSPACE: cap1-context-specs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Tessl CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Non-Tessl verify review metadata before publishing
+        run: |
+          python3 bin/context-specs.py catalog generate --source .
+          git diff --exit-code catalog/skills-manifest.json
+          python3 scripts/check-review-records.py --root . --min-score 70
+
+      - name: Tessl plugin lint
+        run: tessl plugin lint .
+
+      - name: Tessl registry publish or dry-run
+        run: |
+          set -euo pipefail
+          args=(.)
+          if [ -n "${{ inputs.version }}" ]; then
+            args+=(--version "${{ inputs.version }}")
+          fi
+          if [ -n "${{ inputs.bump }}" ]; then
+            args+=(--bump "${{ inputs.bump }}")
+          fi
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            args+=(--dry-run)
+          fi
+          tessl plugin publish "${args[@]}"
+
+      - name: Tessl registry info
+        if: ${{ inputs.dry-run == 'false' }}
+        run: tessl plugin info "cap1-context-specs/context-specs@${{ inputs.version }}"

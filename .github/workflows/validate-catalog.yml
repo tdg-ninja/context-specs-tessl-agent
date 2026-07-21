@@ -1,0 +1,42 @@
+name: Validate Context Specs catalog
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+      - 'subagents/**'
+      - 'catalog/**'
+      - 'bin/context-specs.py'
+      - 'scripts/**'
+      - '.github/workflows/validate-catalog.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'subagents/**'
+      - 'catalog/**'
+      - 'bin/context-specs.py'
+      - 'scripts/**'
+      - '.github/workflows/validate-catalog.yml'
+
+jobs:
+  deterministic-local-checks:
+    name: Non-Tessl deterministic catalog and CLI checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Non-Tessl Python syntax check
+        run: python3 -m py_compile bin/context-specs.py scripts/check-review-records.py scripts/update-review-record.py
+
+      - name: Non-Tessl regenerate local compatibility catalog
+        run: python3 bin/context-specs.py catalog generate --source .
+
+      - name: Non-Tessl check catalog is committed
+        run: git diff --exit-code catalog/skills-manifest.json
+
+      - name: Non-Tessl check review records match artifact digests
+        run: python3 scripts/check-review-records.py --root . --min-score 70
+
+      - name: Non-Tessl local-source CLI smoke test
+        run: scripts/test-cli.sh

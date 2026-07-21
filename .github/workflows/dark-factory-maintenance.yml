@@ -1,0 +1,139 @@
+name: Dark Factory maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Maintenance task for the Tessl agent to perform
+        required: true
+        default: 'Inspect the Context Specs plugin, identify stale review records, low-scoring skills, registry drift, and CI gaps. Make safe repo changes only when clearly supported, then summarize next actions.'
+      dry-run:
+        description: Analyze and report without editing files
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+  schedule:
+    - cron: '17 10 * * 1'
+
+concurrency:
+  group: dark-factory-maintenance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  dark-factory:
+    name: Dark Factory via Tessl agent
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TASK: ${{ github.event.inputs.task || 'Weekly Context Specs Dark Factory maintenance: inspect plugin health, review records, registry installability, low-scoring skills, and CI gaps. Make safe repo changes only when clearly supported, then summarize next actions.' }}
+      DRY_RUN: ${{ github.event.inputs.dry-run || 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Tessl CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Non-Tessl preflight checks
+        run: |
+          python3 -m py_compile bin/context-specs.py scripts/check-review-records.py scripts/update-review-record.py
+          python3 bin/context-specs.py catalog generate --source .
+          python3 scripts/check-review-records.py --root . --min-score 70
+
+      - name: Write Dark Factory prompt file
+        run: |
+          mkdir -p .tessl/dark-factory
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          task = os.environ.get("TASK", "")
+          dry_run = os.environ.get("DRY_RUN", "true")
+          Path(".tessl/dark-factory/prompt.md").write_text(f"""You are the Dark Factory maintenance agent for the Context Specs repository.
+
+          Goal: keep the private Tessl plugin cap1-context-specs/context-specs healthy, reviewed, publishable, installable, and easy to roll out.
+
+          Read these files first:
+          - docs/distribution.md
+          - .tessl-plugin/plugin.json
+          - catalog/skills-manifest.json
+          - .github/workflows/validate-catalog.yml
+          - .github/workflows/tessl-plugin-quality.yml
+          - .github/workflows/tessl-registry-publish.yml
+          - .github/workflows/tessl-registry-install-smoke.yml
+
+          User task:
+          {task}
+
+          Dry run:
+          {dry_run}
+
+          Rules:
+          - Make it explicit in any summary which steps use Tessl surfaces and which are deterministic local checks.
+          - If dry run is true, do not edit files; write .tessl/dark-factory/report.md only.
+          - If dry run is false, make safe changes, run relevant checks, and leave a concise summary in .tessl/dark-factory/report.md.
+          - Do not publish registry versions from this workflow; use .github/workflows/tessl-registry-publish.yml for publishing.
+          - Do not inline large command output into prompts; save evidence files under .tessl/dark-factory/.
+          """)
+          PY
+
+      - name: Tessl Dark Factory agent run
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            tessl agent --print --no-session --permission-mode accept-edits \
+              "Read .tessl/dark-factory/prompt.md and perform the requested Dark Factory maintenance analysis." \
+              > .tessl/dark-factory/agent-output.txt < /dev/null
+          else
+            tessl agent --print --no-session --permission-mode yolo \
+              "Read .tessl/dark-factory/prompt.md and perform the requested Dark Factory maintenance work." \
+              > .tessl/dark-factory/agent-output.txt < /dev/null
+          fi
+          cat .tessl/dark-factory/agent-output.txt
+
+      - name: Non-Tessl post-agent checks
+        if: ${{ github.event.inputs.dry-run == 'false' }}
+        run: |
+          python3 bin/context-specs.py catalog generate --source .
+          python3 scripts/check-review-records.py --root . --min-score 70
+          scripts/test-cli.sh
+          git diff --check
+
+      - name: Create pull request for Dark Factory changes
+        if: ${{ github.event.inputs.dry-run == 'false' }}
+        run: |
+          if git diff --quiet; then
+            echo "No Dark Factory changes to propose."
+            exit 0
+          fi
+          branch="dark-factory/maintenance-${GITHUB_RUN_ID}"
+          git config user.name "dark-factory[bot]"
+          git config user.email "dark-factory[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add -A
+          git commit -m "Dark Factory maintenance updates"
+          git push origin "$branch"
+          gh pr create \
+            --title "Dark Factory maintenance updates" \
+            --body-file .tessl/dark-factory/report.md \
+            --base main \
+            --head "$branch"
+
+      - name: Upload Dark Factory report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dark-factory-report
+          path: .tessl/dark-factory/**
+          if-no-files-found: ignore

@@ -21,7 +21,7 @@ flowchart LR
   Route --> PR["learn/<sha> PR\nyou review and merge"]
 ```
 
-The skill that does this is [`/learn`](../skills/harness/learn/SKILL.md),
+The skill that does this is [`/learn`](../skills/learn/SKILL.md),
 and a few principles make it trustworthy rather than a source of drift.
 
 ## Ground truth only — one write path
