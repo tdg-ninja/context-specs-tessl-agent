@@ -7,3 +7,7 @@ __pycache__/
 
 # Harness worktrees (per implement-mainspec parallel mode)
 .claude/worktrees/
+
+# Runtime artifacts from Tessl/Dark Factory automation
+.tessl/dark-factory/
+.tessl/review-results/
