@@ -1,0 +1,18 @@
+{
+  "name": "Compact skill entrypoints delegate full instructions",
+  "instruction": "Each `skills/*/SKILL.md` file must stay compact and point agents to `references/full-instructions.md` for detailed workflow instructions.",
+  "relevant_when": "Markdown file named `SKILL.md` directly under a directory in `skills/`.",
+  "context": "Compact skill entrypoints help agents activate the right skill quickly while preserving detailed guidance in reference files.",
+  "scope": "file",
+  "scope_reason": "A single SKILL.md file contains its own length and reference-link evidence.",
+  "checklist": [
+    {
+      "name": "entrypoint-is-compact",
+      "rule": "The SKILL.md file is compact enough to read on one screen, with no long embedded reference workflow or extensive command transcript."
+    },
+    {
+      "name": "links-full-instructions",
+      "rule": "The SKILL.md file explicitly points to `references/full-instructions.md` before asking the agent to make changes or run project commands."
+    }
+  ]
+}

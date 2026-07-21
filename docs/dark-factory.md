@@ -34,6 +34,13 @@ PR creation.
   - Runs `tessl review run quality` for changed skills.
   - Updates review records and regenerates the catalog.
 
+- **`tessl-change-verify.yml` — Tessl change verify harness invariant gate**
+  - Installs the Tessl CLI.
+  - Runs `tessl auth whoami`.
+  - Runs `tessl change verify lint` for each verifier JSON file.
+  - Runs `tessl change verify --dry-run --all --show-files` to inspect verifier scope.
+  - Runs `tessl change verify --github` against the pull request diff.
+
 - **`tessl-registry-publish.yml` — Tessl registry release**
   - Verifies review metadata locally.
   - Runs `tessl plugin lint .`.
@@ -104,6 +111,7 @@ access to the target repo.
 
 - Use deterministic checks on every PR.
 - Use Tessl review/lint on skill or plugin changes.
+- Use Tessl change verify on harness invariant changes.
 - Use registry install smoke weekly and before demos.
 - Use Dark Factory dry-run weekly for health reports.
 - Use Dark Factory write mode only when you want an automated maintenance PR.
