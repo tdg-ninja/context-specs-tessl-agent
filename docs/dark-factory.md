@@ -17,6 +17,7 @@ installable, and safe to roll out.
 - **Tessl change review:** `tessl change review` with explicit reviewer skills for advisory PR review comments.
 - **Tessl change risk:** `tessl change risk` with checked-in `.github/pr-review-gate/` policy for human-review decisions.
 - **Tessl Dark Factory agent:** `tessl agent --print` in the maintenance workflow.
+- **Tessl cloud issue implementation skill:** `cap1-context-specs/implement-issue@0.1.0#implement-issue`.
 
 Everything else is deterministic local glue: Python digest checks, catalog
 generation, compatibility mirroring into `.claude/`, shell smoke tests, and GitHub
