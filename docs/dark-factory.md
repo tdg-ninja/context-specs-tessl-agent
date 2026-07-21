@@ -55,6 +55,8 @@ PR creation.
 - **`dark-factory-issue-dispatch.yml` — GitHub issue-originated Dark Factory work**
   - Triggers when an issue receives the `dark-factory` label, when someone comments `/dark-factory`, or by manual dispatch with an issue number.
   - Captures the issue body/comments into `.tessl/dark-factory/issue.json`.
+  - Validates issue structure twice: a deterministic local check plus a Tessl agent judgment against `docs/github-issue-contract.md`.
+  - Stops and comments on the issue when either validation says the issue is not dispatchable.
   - Runs `tessl agent --print` against a file-backed prompt to implement the issue or write a diagnosis.
   - Runs deterministic post-agent checks and opens a PR that references the issue.
 
@@ -86,9 +88,9 @@ the target repo.
 4. Run Dark Factory in report mode:
    - GitHub Actions → **Dark Factory maintenance** → `dry-run=true`.
 5. Originate work from a GitHub issue:
-   - Create or open an issue.
+   - Create an issue with the **Dark Factory task** template or follow `docs/github-issue-contract.md`.
    - Add the `dark-factory` label or comment `/dark-factory`.
-   - The issue-dispatch workflow runs the Tessl agent and opens a PR when it makes changes.
+   - The issue-dispatch workflow validates the issue shape, runs the Tessl agent, and opens a PR when it makes changes.
 6. Publish a release candidate:
    - GitHub Actions → **Tessl registry publish** → `dry-run=true`.
    - Re-run with `dry-run=false` only after the dry run passes.
