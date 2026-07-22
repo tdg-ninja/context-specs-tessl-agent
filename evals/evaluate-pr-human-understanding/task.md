@@ -1,0 +1,1 @@
+A Dark Factory PR has passed checks and changes `docs/dark-factory.md` plus one GitHub workflow. Describe how the `evaluate-pr` skill should guide the human reviewer through the PR, including what to read, what to run or inspect, and what outcomes are acceptable.

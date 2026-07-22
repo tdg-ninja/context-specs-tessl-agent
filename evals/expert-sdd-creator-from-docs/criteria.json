@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the `expert-sdd-creator` Context Specs skill using repo-specific harness behavior.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "uses_domain_docs",
+      "description": "Starts from the supplied domain documentation plus optional steering context.",
+      "max_score": 3
+    },
+    {
+      "name": "creates_expert_structure",
+      "description": "Describes creating an expert skill/reference structure with concise reusable guidance.",
+      "max_score": 3
+    },
+    {
+      "name": "adds_signal_guidance",
+      "description": "Includes Signal or validation guidance appropriate for the domain.",
+      "max_score": 3
+    },
+    {
+      "name": "registers_catalogs",
+      "description": "Mentions registering the expert in relevant experts/signals catalogs so planning can discover it.",
+      "max_score": 3
+    },
+    {
+      "name": "validates_result",
+      "description": "Includes validation of the generated expert structure before use.",
+      "max_score": 2
+    }
+  ]
+}

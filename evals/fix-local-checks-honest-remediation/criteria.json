@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the `fix-local-checks` Context Specs skill using repo-specific harness behavior.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "reads_failure_output",
+      "description": "Uses local-check failure output to identify underlying causes.",
+      "max_score": 3
+    },
+    {
+      "name": "fixes_real_causes",
+      "description": "Fixes the lint/type errors directly rather than bypassing checks.",
+      "max_score": 4
+    },
+    {
+      "name": "does_not_silence_checks",
+      "description": "Explicitly avoids disabling tests, weakening checks, or suppressing errors without cause.",
+      "max_score": 4
+    },
+    {
+      "name": "re_runs_checks",
+      "description": "Reruns the relevant checks and confirms they pass.",
+      "max_score": 3
+    },
+    {
+      "name": "keeps_scope_narrow",
+      "description": "Keeps changes scoped to post-implementation polish, not a second feature implementation pass.",
+      "max_score": 2
+    }
+  ]
+}

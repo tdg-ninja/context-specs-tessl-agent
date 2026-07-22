@@ -55,6 +55,16 @@ jobs:
       - name: Tessl plugin lint
         run: tessl plugin lint .
 
+      - name: Tessl eval lint before publish
+        run: tessl eval lint .
+
+      - name: Tessl security review changed skills before publish
+        env:
+          SKILL_SCOPE: changed
+          BASE_REF: origin/main
+          SECURITY_FAIL_ON: high
+        run: scripts/run-skill-security-reviews.sh
+
       - name: Tessl registry publish or dry-run
         run: |
           set -euo pipefail

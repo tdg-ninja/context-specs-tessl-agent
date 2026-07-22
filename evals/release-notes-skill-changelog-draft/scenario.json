@@ -1,0 +1,3 @@
+{
+  "description": "The release-notes skill drafts a concise changelog from merged PRs or a git range."
+}

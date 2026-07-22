@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the `evaluate-sessions` Context Specs skill using repo-specific harness behavior.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "reads_build_trail",
+      "description": "Says to read the relevant agent session logs/build trail across planning/implementation/review steps.",
+      "max_score": 4
+    },
+    {
+      "name": "identifies_context_gap",
+      "description": "Focuses on finding where context was missing, stale, poorly routed, or ignored.",
+      "max_score": 4
+    },
+    {
+      "name": "captures_regression",
+      "description": "Recommends turning the failure into an eval, verifier, rule, doc, or memory update as appropriate.",
+      "max_score": 3
+    },
+    {
+      "name": "separates_code_fix_from_context_fix",
+      "description": "Distinguishes fixing the immediate PR from improving future agent behavior.",
+      "max_score": 3
+    },
+    {
+      "name": "uses_diagnosis_first",
+      "description": "Uses diagnosis-first language for STUCK or wrong-output cases.",
+      "max_score": 2
+    }
+  ]
+}

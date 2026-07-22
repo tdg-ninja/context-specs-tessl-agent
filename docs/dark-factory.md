@@ -10,9 +10,10 @@ installable, and safe to roll out.
 - **Tessl workspace:** `cap1-context-specs`.
 - **Tessl plugin manifest:** `.tessl-plugin/plugin.json`.
 - **Tessl quality review:** `tessl review run quality` for each changed skill.
-- **Tessl evals:** `tessl eval lint .` and manual `tessl eval run .` for repeatable critical workflow behavior checks.
+- **Tessl security review:** `tessl review run security` for new skills and scheduled existing-skill assurance.
+- **Tessl evals:** `tessl eval lint .` and `tessl eval run .` for repeatable critical workflow behavior checks.
 - **Tessl plugin validation:** `tessl plugin lint .`.
-- **Tessl publishing:** `tessl plugin publish .`.
+- **Tessl publishing:** `tessl plugin publish .`, with a new-skill publish workflow after approved Tessl checks.
 - **Tessl installation:** `tessl install cap1-context-specs/context-specs@<version>`.
 - **Tessl change review:** `tessl change review` with explicit reviewer skills for advisory PR review comments.
 - **Tessl change risk:** `tessl change risk` with checked-in `.github/pr-review-gate/` policy for human-review decisions.
@@ -94,6 +95,9 @@ confirms the exact required-check names and scope in GitHub branch protection.
   - Runs `tessl auth whoami`.
   - Runs `tessl plugin lint .`.
   - Runs `tessl review run quality` for changed skills.
+  - Posts changed-skill quality scores directly on the PR.
+  - Runs `tessl review run security` for newly added skills.
+  - Requires eval coverage and runs `tessl eval run . --skill <new-skill>` for newly added skills.
   - Updates review records and regenerates the catalog.
 
 - **`tessl-change-verify.yml` — Tessl change verify harness invariant gate**
@@ -118,8 +122,16 @@ confirms the exact required-check names and scope in GitHub branch protection.
 - **`tessl-registry-publish.yml` — Tessl registry release**
   - Verifies review metadata locally.
   - Runs `tessl plugin lint .`.
+  - Runs `tessl eval lint .`.
+  - Runs `tessl review run security` for changed skills before publishing.
   - Runs `tessl plugin publish --dry-run .` or `tessl plugin publish .`.
   - Shows `tessl plugin info` after a real publish.
+
+- **`tessl-new-skill-publish.yml` — Tessl publish after new skill approval**
+  - Runs after pushes to `main` that add skills, or by manual dispatch.
+  - Detects newly added skills and requires eval coverage for them.
+  - Runs security review, eval lint, full Tessl evals, plugin lint, and metadata checks.
+  - Publishes `cap1-context-specs/context-specs` with a patch bump after checks pass; manual dispatch defaults to dry-run.
 
 - **`tessl-registry-install-smoke.yml` — Tessl installability check**
   - Installs the Tessl CLI.
@@ -131,6 +143,12 @@ confirms the exact required-check names and scope in GitHub branch protection.
   - Runs `tessl eval lint .` as a deterministic scenario-shape preflight.
   - Runs `tessl eval run .` only when manually dispatched and explicitly requested.
   - Stays advisory by default and does not run on every PR.
+
+- **`tessl-skill-assurance.yml` — Tessl scheduled skill security and evals**
+  - Runs weekly and manually.
+  - Runs `tessl review run security` for selected skills, defaulting to all existing skills.
+  - Runs `tessl eval lint .` and full remote `tessl eval run .` by default for scheduled assurance.
+  - Uploads security and eval artifacts for review.
 
 - **`dark-factory-health.yml` — Tessl agent maintenance loop**
   - Runs deterministic preflight checks.
@@ -215,7 +233,7 @@ access to the target repo.
 
 - Use deterministic checks on every PR.
 - Use Tessl review/lint on skill or plugin changes.
-- Use Tessl eval lint on eval changes, and manual Tessl eval runs on covered critical workflow changes.
+- Use Tessl eval lint on eval changes, automatic eval runs for new skills, and scheduled full eval runs for existing skills.
 - Use Tessl change verify on harness invariant changes.
 - Use Tessl change review for advisory review comments from explicit review skills.
 - Use Tessl change risk as an advisory human-confidence gate; a `human review required` decision is normal signal, not a failed workflow.
@@ -226,4 +244,4 @@ access to the target repo.
 - Use Dark Factory write mode only when you want an automated maintenance PR.
 - Use learning-loop issue creation only with the explicit opt-in input and bounded issue cap.
 - Use GitHub issues plus the `dark-factory` label or `/dark-factory` comment for issue-originated work.
-- Use publish workflow manually after review metadata and lint are clean.
+- Use the new-skill publish workflow to publish newly added skills after approved Tessl quality, security, eval, and verifier checks; use registry publish manually for other releases.

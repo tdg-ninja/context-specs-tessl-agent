@@ -1,0 +1,1 @@
+A developer says: “Let users export release notes from recent PRs.” Describe how `intent` should turn that idea into artifacts for the harness, including the branch/files it should produce and how it should use project context.

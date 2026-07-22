@@ -1,0 +1,76 @@
+name: Tessl scheduled skill assurance
+
+on:
+  workflow_dispatch:
+    inputs:
+      skill-scope:
+        description: Skills to assess
+        required: false
+        default: all
+        type: choice
+        options: [all, changed]
+      run-evals:
+        description: Run remote Tessl evals, not just eval lint
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+  schedule:
+    - cron: '41 8 * * 1'
+
+concurrency:
+  group: tessl-skill-assurance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tessl-skill-assurance:
+    name: Tessl scheduled skill security and evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+      TESSL_WORKSPACE: cap1-context-specs
+      BASE_REF: origin/main
+      HEAD_REF: HEAD
+      SKILL_SCOPE: ${{ inputs['skill-scope'] || 'all' }}
+      RUN_EVALS: ${{ inputs['run-evals'] || 'true' }}
+      REQUIRE_EVALS: 'false'
+      SECURITY_FAIL_ON: high
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Tessl CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Non-Tessl deterministic preflight
+        run: |
+          python3 -m py_compile scripts/list-skills-for-assurance.py
+          bash -n scripts/run-skill-security-reviews.sh scripts/run-skill-evals.sh
+          python3 bin/context-specs.py catalog generate --source .
+          python3 scripts/check-review-records.py --root . --min-score 70
+          scripts/test-cli.sh
+
+      - name: Tessl security review selected skills
+        run: scripts/run-skill-security-reviews.sh
+
+      - name: Tessl eval selected skills
+        run: scripts/run-skill-evals.sh
+
+      - name: Upload Tessl skill assurance artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tessl-skill-assurance
+          path: |
+            .tessl/security-results/**
+            .tessl/eval-results/**
+          if-no-files-found: ignore

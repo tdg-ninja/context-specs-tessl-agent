@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the `learn` Context Specs skill using repo-specific harness behavior.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "reads_merged_diff",
+      "description": "Starts from the merged diff and relevant PR/spec context.",
+      "max_score": 3
+    },
+    {
+      "name": "routes_learning",
+      "description": "Routes durable facts to the right destination: Expert shards, AGENTS.md pointers, candidate lints/checks, or invariants.",
+      "max_score": 4
+    },
+    {
+      "name": "avoids_private_noise",
+      "description": "Avoids persisting transient logs or one-off runtime details as durable memory.",
+      "max_score": 3
+    },
+    {
+      "name": "opens_reviewable_pr",
+      "description": "Writes updates on a reviewable learn branch/PR rather than silently mutating main.",
+      "max_score": 3
+    },
+    {
+      "name": "handles_stale_memory",
+      "description": "Considers removing or updating stale memory made obsolete by the merge.",
+      "max_score": 2
+    }
+  ]
+}

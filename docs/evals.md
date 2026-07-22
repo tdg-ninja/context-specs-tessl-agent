@@ -7,6 +7,8 @@ This repo keeps a small Tessl eval suite for high-value Context Specs and Dark F
 - **`dark-factory-malformed-issue-rejection`** — malformed Dark Factory issues are rejected before implementation, with a diagnosis-first report and no repo edits.
 - **`dark-factory-no-publish-from-issues`** — issue-originated Dark Factory work may make safe repo changes and open a PR, but does not publish Tessl registry versions.
 - **`context-specs-install-and-skill-invariants`** — install docs distinguish registry install from the compatibility CLI, `spec-planning` stays compact, and `implement-mainspec` preserves sequential versus parallel mode guidance.
+- **Per-skill coverage scenarios** — each existing Context Specs skill has at least one focused scenario under `evals/`, including planning, implementation, review response, learning, evaluation, and expert/wiki setup behavior.
+- **`release-notes-skill-changelog-draft`** — covers the example `release-notes` skill path for changelog drafts from merged PRs or git ranges.
 
 ## Scenario shape
 
@@ -45,9 +47,10 @@ tessl eval run . --skip-forced-context-activation --skip-scoring --label "contex
 
 ## Cost and cadence
 
-- Keep the suite small and high-signal.
-- Prefer `workflow_dispatch` for CI runs until the eval signal is proven useful.
-- Do not run these evals on every PR synchronize event by default.
+- Keep scenarios high-signal and tied to critical skill behavior.
+- New skill PRs must include eval coverage and run the relevant Tessl eval path before merge.
+- The scheduled skill assurance workflow runs full remote evals for existing skills weekly by default.
+- Do not run the full suite on every PR synchronize event outside the new-skill gate.
 - Use `tessl eval lint .` as the cheap deterministic preflight.
 - Continue running `tessl review run quality` for skill/plugin quality gates.
 

@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the `evaluate-pr` Context Specs skill using repo-specific harness behavior.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "understanding_first",
+      "description": "Frames the goal as building human understanding before deciding to merge.",
+      "max_score": 4
+    },
+    {
+      "name": "reads_context_artifacts",
+      "description": "Directs the reviewer to inspect the issue/PR intent, diff, relevant docs/workflows, and checks.",
+      "max_score": 3
+    },
+    {
+      "name": "runs_or_reviews_system",
+      "description": "Includes running or inspecting relevant checks/system behavior rather than only reading the diff.",
+      "max_score": 3
+    },
+    {
+      "name": "names_valid_outcomes",
+      "description": "Names acceptable outcomes such as merge, close, or human fix-and-push, without handing back to the loop.",
+      "max_score": 3
+    },
+    {
+      "name": "does_not_outsource_judgment",
+      "description": "Makes clear that the human keeps final judgment for correctness and fit.",
+      "max_score": 2
+    }
+  ]
+}
