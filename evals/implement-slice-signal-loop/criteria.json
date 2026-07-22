@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the `implement-slice` Context Specs skill using repo-specific harness behavior.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "implements_single_slice",
+      "description": "Keeps work scoped to the single slice and its success criteria.",
+      "max_score": 3
+    },
+    {
+      "name": "uses_tests_and_signal",
+      "description": "Runs unit tests and the slice Signal validation, not just static edits.",
+      "max_score": 4
+    },
+    {
+      "name": "iterates_bounded",
+      "description": "Iterates on failures up to a bounded maximum rather than looping forever.",
+      "max_score": 3
+    },
+    {
+      "name": "reports_failure_honestly",
+      "description": "Reports failure with evidence if Signal cannot be satisfied.",
+      "max_score": 3
+    },
+    {
+      "name": "no_human_prompts",
+      "description": "Maintains agent-first/no-human-prompt behavior during execution.",
+      "max_score": 2
+    }
+  ]
+}

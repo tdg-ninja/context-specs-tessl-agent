@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the `spec-validate` Context Specs skill using repo-specific harness behavior.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "uses_multi_agent_consensus",
+      "description": "Uses multiple independent reviewer passes or consensus to raise confidence in findings.",
+      "max_score": 4
+    },
+    {
+      "name": "includes_expert_review",
+      "description": "Applies relevant experts after or alongside subagent findings when available.",
+      "max_score": 3
+    },
+    {
+      "name": "classifies_impact",
+      "description": "Distinguishes impactful findings from nits or low-confidence suggestions.",
+      "max_score": 3
+    },
+    {
+      "name": "applies_fixes_directly",
+      "description": "Applies high-confidence impactful fixes directly to spec files rather than asking for approval.",
+      "max_score": 3
+    },
+    {
+      "name": "writes_validated_sentinel",
+      "description": "Finishes with the expected validated sentinel or clear completion marker.",
+      "max_score": 2
+    }
+  ]
+}

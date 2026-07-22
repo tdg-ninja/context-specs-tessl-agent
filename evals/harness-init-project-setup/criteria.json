@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the `harness-init` Context Specs skill using repo-specific harness behavior.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "discovers_project_commands",
+      "description": "Discovers project setup, dependency, test, lint, and local check commands from repo evidence.",
+      "max_score": 4
+    },
+    {
+      "name": "sets_dispatcher_loop",
+      "description": "Sets up the harness dispatcher/polling loop and config files needed for agent execution.",
+      "max_score": 3
+    },
+    {
+      "name": "creates_agents_contract",
+      "description": "Creates or updates AGENTS.md-style guidance as a map to durable context.",
+      "max_score": 3
+    },
+    {
+      "name": "provisions_worktrees",
+      "description": "Accounts for worktree provisioning/bootstrap so feature worktrees are runnable.",
+      "max_score": 3
+    },
+    {
+      "name": "asks_when_unknown",
+      "description": "Asks or flags uncertainty instead of inventing setup commands when discovery is thin.",
+      "max_score": 3
+    }
+  ]
+}

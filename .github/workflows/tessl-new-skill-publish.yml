@@ -1,0 +1,133 @@
+name: Tessl publish new skills
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'catalog/**'
+      - 'evals/**'
+      - '.tessl-plugin/**'
+      - '.github/workflows/tessl-new-skill-publish.yml'
+  workflow_dispatch:
+    inputs:
+      base-ref:
+        description: Base ref used to detect newly added skills
+        required: false
+        default: HEAD~1
+      dry-run:
+        description: Run publish checks without publishing
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+
+concurrency:
+  group: tessl-new-skill-publish
+  cancel-in-progress: false
+
+jobs:
+  publish-new-skills:
+    name: Tessl publish after new skill approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: read
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+      TESSL_WORKSPACE: cap1-context-specs
+      BASE_REF: ${{ github.event.before || inputs['base-ref'] || 'HEAD~1' }}
+      HEAD_REF: HEAD
+      SKILL_SCOPE: new
+      REQUIRE_EVALS: 'true'
+      RUN_EVALS: 'true'
+      SECURITY_FAIL_ON: high
+      DRY_RUN: ${{ inputs['dry-run'] || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Tessl CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Non-Tessl detect newly added skills
+        id: new-skills
+        run: |
+          set -euo pipefail
+          mkdir -p .tessl/eval-results .tessl/security-results
+          python3 scripts/list-skills-for-assurance.py \
+            --mode new \
+            --base "$BASE_REF" \
+            --head "$HEAD_REF" \
+            --format json \
+            --require-evals \
+            > .new-skills.json
+          cat .new-skills.json
+          count=$(python3 - <<'PY'
+          import json
+          print(len(json.load(open('.new-skills.json'))['skills']))
+          PY
+          )
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: No new skills to publish
+        if: steps.new-skills.outputs.count == '0'
+        run: echo "No newly added skills detected; skipping Tessl publish."
+
+      - name: Non-Tessl verify review metadata before publish
+        if: steps.new-skills.outputs.count != '0'
+        run: |
+          python3 bin/context-specs.py catalog generate --source .
+          git diff --exit-code catalog/skills-manifest.json
+          python3 scripts/check-review-records.py --root . --min-score 70
+          scripts/test-cli.sh
+
+      - name: Tessl plugin lint before publish
+        if: steps.new-skills.outputs.count != '0'
+        run: tessl plugin lint .
+
+      - name: Tessl security review new skills before publish
+        if: steps.new-skills.outputs.count != '0'
+        run: scripts/run-skill-security-reviews.sh
+
+      - name: Tessl eval lint for new skills before publish
+        if: steps.new-skills.outputs.count != '0'
+        env:
+          RUN_EVALS: 'false'
+        run: scripts/run-skill-evals.sh
+
+      - name: Tessl full eval run before publish
+        if: steps.new-skills.outputs.count != '0'
+        run: |
+          tessl eval run . \
+            --label "new-skill-publish-${GITHUB_RUN_ID}" \
+            --yes \
+            --json \
+            | tee .tessl/eval-results/new-skill-publish-run.json
+
+      - name: Tessl publish plugin with patch bump
+        if: steps.new-skills.outputs.count != '0'
+        run: |
+          set -euo pipefail
+          args=(--bump patch .)
+          if [ "$DRY_RUN" = "true" ]; then
+            args=(--dry-run "${args[@]}")
+          fi
+          tessl plugin publish "${args[@]}"
+
+      - name: Upload Tessl new-skill publish artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tessl-new-skill-publish
+          path: |
+            .new-skills.json
+            .tessl/security-results/**
+            .tessl/eval-results/**
+          if-no-files-found: ignore

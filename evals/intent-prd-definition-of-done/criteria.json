@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the `intent` Context Specs skill using repo-specific harness behavior.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "elicits_understanding",
+      "description": "Elicits or clarifies goal, scope, constraints, and success criteria from the human.",
+      "max_score": 3
+    },
+    {
+      "name": "uses_project_context",
+      "description": "Reads project expert/context or performs bootstrap discovery when no expert exists.",
+      "max_score": 3
+    },
+    {
+      "name": "writes_prd",
+      "description": "Produces a PRD under prds/<feature>/prd.md with clear scope and out-of-scope sections.",
+      "max_score": 4
+    },
+    {
+      "name": "writes_runnable_done",
+      "description": "Produces an executable run-prd-test.sh or equivalent runnable definition of done.",
+      "max_score": 4
+    },
+    {
+      "name": "uses_prd_branch",
+      "description": "Uses the expected PRD branch/artifact handoff shape for the harness.",
+      "max_score": 2
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+A Dark Factory issue run opened a PR that passed tests but missed an issue constraint. Describe how `evaluate-sessions` should inspect the build trail and convert the finding into durable harness improvement rather than just fixing this one PR.
