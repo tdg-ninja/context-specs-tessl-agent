@@ -93,6 +93,29 @@ jobs:
           EVAL_LABEL_PREFIX: new-skill-eval
         run: scripts/run-skill-evals.sh
 
+      - name: Tessl summarize full skill assurance
+        if: always()
+        env:
+          BASE_REF: origin/${{ github.base_ref || 'main' }}
+        run: |
+          python3 scripts/summarize-skill-assurance.py \
+            --base-ref "$BASE_REF" \
+            --min-score "$MIN_REVIEW_SCORE" \
+            --out .tessl/review-results/skill-assurance-summary.md
+
+      - name: Tessl publish full skill assurance comment
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN || secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          python3 scripts/upsert-pr-comment.py \
+            --repo "$REPO" \
+            --pr "$PR_NUMBER" \
+            --body-file .tessl/review-results/skill-assurance-summary.md \
+            --marker '<!-- tessl-skill-assurance -->'
+
       - name: Upload Tessl review result JSON
         if: always()
         uses: actions/upload-artifact@v4
@@ -101,6 +124,7 @@ jobs:
           path: |
             .tessl/review-results/*.json
             .tessl/review-results/skill-quality-summary.md
+            .tessl/review-results/skill-assurance-summary.md
             .tessl/security-results/**
             .tessl/eval-results/**
           if-no-files-found: ignore
