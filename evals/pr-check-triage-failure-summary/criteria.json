@@ -1,0 +1,31 @@
+{
+  "context": "The response should exercise the `pr-check-triage` Context Specs skill by classifying mixed PR check failures and producing a concise maintainer-ready action summary.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "gathers_check_context",
+      "description": "Mentions gathering PR status, failing Actions jobs or steps, logs/artifacts, PR SHA, and relevant PR comments before judging the failures.",
+      "max_score": 3
+    },
+    {
+      "name": "distinguishes_tessl_from_non_tessl",
+      "description": "Correctly separates Tessl governance or skill-assurance failures from Non-Tessl deterministic checks and infrastructure/runtime failures.",
+      "max_score": 5
+    },
+    {
+      "name": "identifies_likely_causes",
+      "description": "Names likely causes for the sample failures: deterministic assertion, stale or missing review metadata, risk policy human-review requirement, and runner startup timeout.",
+      "max_score": 4
+    },
+    {
+      "name": "recommends_rerun_vs_fix",
+      "description": "Recommends fixing reproducible deterministic or catalog/Tessl metadata problems, treating risk as a maintainer decision, and rerunning only the runner-timeout infrastructure failure.",
+      "max_score": 5
+    },
+    {
+      "name": "uses_concise_summary_format",
+      "description": "Produces a compact triage summary with failing checks, likely cause, owner or next action, and rerun-or-fix recommendation.",
+      "max_score": 3
+    }
+  ]
+}
