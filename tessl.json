@@ -1,4 +1,5 @@
 {
+  "name": "cap1-context-specs/context-specs-tessl-agent",
   "verify": {
     "groups": {
       "harness-invariants": {
