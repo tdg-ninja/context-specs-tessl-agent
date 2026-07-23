@@ -1,0 +1,3 @@
+{
+  "description": "PR-check-triage summarizes mixed failing PR checks and recommends rerun or fix actions."
+}

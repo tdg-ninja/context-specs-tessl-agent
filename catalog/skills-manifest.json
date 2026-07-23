@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "package": "context-specs",
-  "generatedAt": "2026-07-21T16:41:08Z",
+  "generatedAt": "2026-07-22T02:02:22Z",
   "sourceRevision": "catalog",
-  "catalogSha256": "c8b5f8a28aa23ff69de255f88e6f8f5e307b704b9fea121266907bf05b92d353",
+  "catalogSha256": "e01c4da59bd02dc691e9871b7ab00f92e4e9a334975e4be0e9147934279b2218",
   "policy": {
     "installDefault": "reviewed-only",
     "registryDefault": "cap1-context-specs/context-specs"
@@ -452,6 +452,31 @@
         {
           "path": "skills/learn/scripts/check-agents-md.sh",
           "sha256": "46fc459fc2460d4652574e2e73da2b66912241f77d589ad535610de52d738442"
+        }
+      ]
+    },
+    {
+      "name": "pr-check-triage",
+      "description": "Summarize failing GitHub PR checks and recommend the next action for a maintainer or Dark Factory agent. Use when a PR is red and someone needs to distinguish deterministic check failures, Tessl review/verify/risk outcomes, registry/package issues, or agent/runtime infrastructure failures before deciding whether to rerun or fix code/config.",
+      "sourcePath": "skills/pr-check-triage",
+      "installPath": ".claude/skills/pr-check-triage",
+      "sha256": "31396bf6d516512e9468b17833854f4c968ced45e363af16276a6b2296c12e86",
+      "review": {
+        "status": "reviewed",
+        "reviewedAt": "2026-07-22T02:02:22Z",
+        "reviewer": "tessl/default-skill-review@0.1.0",
+        "notes": "Reviewed with tessl review run quality in workspace cap1-context-specs before private registry publish.",
+        "reviewRunId": "019f878f-997e-7742-9ebe-d2cd9ce3e8fe",
+        "score": 100
+      },
+      "files": [
+        {
+          "path": "skills/pr-check-triage/SKILL.md",
+          "sha256": "b58f724b3d9c332433c8fcfc2d1001327f52dab0cf99801a1890ce5d67ce7e6c"
+        },
+        {
+          "path": "skills/pr-check-triage/references/full-instructions.md",
+          "sha256": "82e69b8e9fa519615bfdc659fc38c431330884fd0ca781918c454cc396c3f975"
         }
       ]
     },
