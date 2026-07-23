@@ -23,6 +23,126 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  tessl-scenario-generation:
+    name: Tessl async eval scenario generation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+      TESSL_WORKSPACE: cap1-context-specs
+      BASE_REF: origin/${{ github.base_ref || 'main' }}
+      REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Tessl CLI
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      - name: Tessl auth check
+        run: tessl auth whoami
+
+      - name: Non-Tessl collect new skill context
+        id: new-skills
+        run: |
+          set -euo pipefail
+          mkdir -p .tessl/scenario-generation
+          python3 scripts/list-skills-for-assurance.py \
+            --mode new \
+            --base "$BASE_REF" \
+            --head HEAD \
+            --format json \
+            > .tessl/scenario-generation/new-skills.json
+          count=$(python3 - <<'PY'
+          import json
+          print(len(json.load(open('.tessl/scenario-generation/new-skills.json'))['skills']))
+          PY
+          )
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          git diff --name-only "$BASE_REF"...HEAD > .tessl/scenario-generation/changed-files.txt
+
+      - name: Tessl agent plans eval scenario generation
+        if: steps.new-skills.outputs.count != '0'
+        run: |
+          cat > .tessl/scenario-generation/planning-prompt.md <<'PROMPT'
+          You are planning asynchronous eval scenario generation for a Context Specs pull request.
+
+          Read:
+          - .tessl/scenario-generation/new-skills.json
+          - .tessl/scenario-generation/changed-files.txt
+          - docs/evals.md
+          - docs/dark-factory.md
+          - the new skill files listed in new-skills.json
+
+          Decide whether to generate scenarios from the plugin or from the repo/PR context.
+          Return only JSON and write the same JSON to .tessl/scenario-generation/plan.json.
+
+          JSON schema:
+          {
+            "mode": "plugin" | "repo" | "skip",
+            "count": 1-5,
+            "reason": "short explanation",
+            "expectedFocus": ["short focus item"]
+          }
+
+          Guidance:
+          - Prefer "plugin" for a new general-purpose skill where plugin context is enough.
+          - Prefer "repo" when PR-level context or changed files explain the behavior better.
+          - Choose a small count; this is asynchronous PR-time exploration, not final eval curation.
+          PROMPT
+          tessl agent --print --no-session --permission-mode yolo \
+            "Read .tessl/scenario-generation/planning-prompt.md and create the requested scenario generation plan." \
+            > .tessl/scenario-generation/planner-output.txt < /dev/null
+          if [ ! -s .tessl/scenario-generation/plan.json ]; then
+            python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+          text = Path('.tessl/scenario-generation/planner-output.txt').read_text()
+          match = re.search(r'\{[\s\S]*\}', text)
+          plan = json.loads(match.group(0)) if match else {"mode":"plugin","count":2,"reason":"fallback plan: generate from plugin context","expectedFocus":["new skill behavior"]}
+          Path('.tessl/scenario-generation/plan.json').write_text(json.dumps(plan, indent=2) + '\n')
+          PY
+          fi
+          cat .tessl/scenario-generation/plan.json
+
+      - name: Tessl start async scenario generation
+        if: steps.new-skills.outputs.count != '0'
+        continue-on-error: true
+        run: python3 scripts/run-scenario-generation.py
+
+      - name: Tessl publish scenario generation comment
+        if: always() && github.event_name == 'pull_request' && steps.new-skills.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.DARK_FACTORY_GH_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          if [ ! -s .tessl/scenario-generation/summary.md ]; then
+            cat > .tessl/scenario-generation/summary.md <<'EOF'
+          <!-- tessl-scenario-generation -->
+          ## Tessl eval scenario generation
+
+          Scenario generation did not produce a summary. Inspect workflow artifacts.
+          EOF
+          fi
+          python3 scripts/upsert-pr-comment.py \
+            --repo "$REPO" \
+            --pr "$PR_NUMBER" \
+            --body-file .tessl/scenario-generation/summary.md \
+            --marker '<!-- tessl-scenario-generation -->'
+
+      - name: Upload Tessl scenario generation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tessl-scenario-generation
+          path: .tessl/scenario-generation/**
+          if-no-files-found: ignore
+
   tessl-quality:
     name: Tessl review/lint gate
     runs-on: ubuntu-latest
