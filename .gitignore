@@ -13,4 +13,5 @@ __pycache__/
 .tessl/review-results/
 .tessl/security-results/
 .tessl/eval-results/
+.tessl/scenario-generation/
 .tessl/memory/

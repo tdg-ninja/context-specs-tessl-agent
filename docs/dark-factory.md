@@ -11,7 +11,7 @@ installable, and safe to roll out.
 - **Tessl plugin manifest:** `.tessl-plugin/plugin.json`.
 - **Tessl quality review:** `tessl review run quality` for each changed skill.
 - **Tessl security review:** `tessl review run security` for new skills and scheduled existing-skill assurance.
-- **Tessl evals:** `tessl eval lint .` and `tessl eval run .` for repeatable critical workflow behavior checks.
+- **Tessl evals:** `tessl eval lint .`, `tessl eval run .`, and asynchronous `tessl scenario generate` for repeatable critical workflow behavior checks.
 - **Tessl plugin validation:** `tessl plugin lint .`.
 - **Tessl publishing:** `tessl plugin publish .`, with a new-skill publish workflow after approved Tessl checks.
 - **Tessl installation:** `tessl install cap1-context-specs/context-specs@<version>`.
@@ -96,8 +96,10 @@ confirms the exact required-check names and scope in GitHub branch protection.
   - Runs `tessl plugin lint .`.
   - Runs `tessl review run quality` for changed skills.
   - Posts changed-skill quality scores directly on the PR.
-  - Runs `tessl review run security` for newly added skills.
+  - Runs `tessl review run security` for newly added skills inline.
   - Requires eval coverage and runs `tessl eval run . --skill <new-skill>` for newly added skills.
+  - Starts asynchronous eval scenario generation for new skills, with a Tessl agent choosing plugin-vs-repo context and scenario count.
+  - Posts PR comments for quality scores, skill assurance, and scenario generation.
   - Updates review records and regenerates the catalog.
 
 - **`tessl-change-verify.yml` — Tessl change verify harness invariant gate**
@@ -233,7 +235,7 @@ access to the target repo.
 
 - Use deterministic checks on every PR.
 - Use Tessl review/lint on skill or plugin changes.
-- Use Tessl eval lint on eval changes, automatic eval runs for new skills, and scheduled full eval runs for existing skills.
+- Use Tessl eval lint on eval changes, automatic eval runs for new skills, asynchronous scenario generation on new-skill PRs, and scheduled full eval runs for existing skills.
 - Use Tessl change verify on harness invariant changes.
 - Use Tessl change review for advisory review comments from explicit review skills.
 - Use Tessl change risk as an advisory human-confidence gate; a `human review required` decision is normal signal, not a failed workflow.
